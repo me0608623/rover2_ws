@@ -1,0 +1,1 @@
+campusrover_msgs/ElevatorInfo[] elevator_infos

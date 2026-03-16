@@ -1,0 +1,59 @@
+<launch>
+    <arg name="predict_step"          default="5"/>
+    <arg name="thread_num"            default="3"/>
+    <arg name="dt"                    default="0.5"/>
+    <arg name="teb_update_period"     default="0.1"/>
+    <arg name="robot2goal_dist"       default="1.7"/>
+    <arg name="map_frame"             default="map"/>
+    <arg name="base_frame"            default="base_footprint"/>
+
+    <node pkg="campusrover_teb" type="campusrover_teb_node" name="campusrover_teb_node" output="screen">
+        <remap from="teb_cmd"                to="/input/nav_cmd_vel"/>
+
+        <param name="robot_max_vel_x"                       value="0.5"/>
+        <param name="robot_max_vel_x_backwards"             value="0.3"/>
+        <param name="robot_max_vel_theta"                   value="0.3"/>
+        <param name="robot_acc_lim_x"                       value="0.3"/>
+        <param name="robot_acc_lim_theta"                   value="0.3"/>
+        <param name="robot_body_width"                      value="0.3"/>
+
+        <param name="goal_tolerance_viapoint_xy_tolerance"      value="1e-1"/>
+        <param name="goal_tolerance_viapoint_yaw_tolerance"     value="36"/> <!-- value="180" >> M_PI/180 -->
+
+        <param name="obstacles_obs_cov_rate"                value="9"/> <!-- value="6" >> 1/6 -->
+        <param name="obstacles_env_inflation_radius"        value="0.8"/>
+        <param name="obstacles_env_report_threshold"        value="0"/>
+        <param name="obstacles_obs_check_time"              value="5"/>
+
+        <param name="trajectory_predict_step"               value="$(arg predict_step)"/>
+        <param name="trajectory_iterate_num"                value="100"/>
+        <param name="trajectory_env_detect_step"            value="10"/>
+        <param name="trajectory_update_dt"                  value="$(arg teb_update_period)"/>
+        <param name="trajectory_dt_ref"                     value="$(arg dt)"/>
+        <param name="trajectory_exact_arc_length"           value="false"/>
+        <param name="trajectory_exact_arc_length_theta"     value="36"/> <!-- value="45" >> M_PI/45 -->
+        <param name="trajectory_robot2goal_dist"            value="$(arg robot2goal_dist)"/>
+        <param name="trajectory_max_rate_omega_min_limit"   value="0.5"/>
+        <param name="trajectory_max_rate_omega_min_vel"     value="0.05"/>
+        <param name="trajectory_max_rate_goal_min"          value="0.5"/>
+        <param name="trajectory_forward_drive_theta"        value="0.707"/>
+
+        <param name="optim_penalty_epsilon"                     value="0.1"/>
+        <param name="optim_weight_max_vel_x"                    value="20"/>
+        <param name="optim_weight_max_vel_theta"                value="20"/>
+        <param name="optim_weight_acc_lim_x"                    value="20"/>
+        <param name="optim_weight_acc_lim_theta"                value="20"/>
+        <param name="optim_weight_kinematics_nh"                value="500"/>
+        <param name="optim_weight_kinematics_forward_drive"     value="10"/>
+        <param name="optim_weight_shortest_path_dist"           value="0.1"/>
+        <param name="optim_weight_shortest_path_angular"        value="1"/>
+        <param name="optim_weight_obstacle"                     value="100"/>
+        <param name="optim_weight_env"                          value="100"/>
+        <param name="optim_weight_viapoint_dist"                value="6"/>
+        <param name="optim_weight_viapoint_angular"             value="4"/>
+        
+        <param name="thread_num"            value="$(arg thread_num)"/>
+        <param name="map_frame"             value="$(arg map_frame)"/>
+        <param name="base_frame"            value="$(arg base_frame)"/>
+    </node>
+</launch>

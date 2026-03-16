@@ -1,0 +1,16 @@
+uint8 DRIVE_PROFILE_NOUSE = 0
+uint8 DRIVE_PROFILE_DEFAULT = 1
+uint8 DRIVE_PROFILE_SET = 2
+uint8 drive_profile
+
+float64 acc_max 
+float64 acc_step
+float64 dec_max
+float64 dec_step
+float64 vel_tolerance
+float64 profile_omega_max
+float64 profile_omega_step
+float64 omega_tolerance
+float64 max_speed
+
+---

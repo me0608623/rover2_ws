@@ -1,0 +1,4 @@
+int32 init_pressure
+int32 init_floor
+int32 current_pressure
+int32 current_floor

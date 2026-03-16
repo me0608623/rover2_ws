@@ -1,0 +1,64 @@
+<launch>
+    <arg name="debug" default="false"/>
+    <arg name="joy_cmd_vel_topic"     default="/input/joy_cmd_vel"/>
+    <arg name="rvizconfig" default="$(find campusrover_driver)/rviz/odom.rviz" />
+    <arg name="model" default="$(find campusrover_description)/urdf/campusrover.urdf"/>
+    <arg name="calibration_mode" default="false"/>
+
+    <group if="$(arg debug)">
+        <include file="$(find campusrover_sensors)/launch/sensors/joy.launch.xml"/>
+        <param name="robot_description"
+            textfile="$(arg model)" />
+        <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+        <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="hector_trajectory_server">
+            <remap from="trajectory" to="odom_path"/>
+            
+            <param name="target_frame_name" value="odom"/>
+            <param name="source_frame_name" value="base_link"/>
+            <param name="trajectory_update_rate" value="10"/>
+            <param name="trajectory_publish_rate" value="5"/>
+        </node>
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" />
+    </group>
+
+    <node name="campusrover_driver" pkg="campusrover_driver" type="rover_driver_node" output="screen">
+      <remap from="/cmd_vel" to="/output/cmd_vel" />
+      <param name="config_file" value="$(find campusrover_driver)/param/driver_charging_v2.yaml"/>
+    </node>
+    
+    <!-- joy -->
+    <include file="$(find campusrover_teb)/launch/sensors/joy.launch.xml" />
+
+    <node pkg="campusrover_driver" name="joy_to_twist" type="joy_to_twist">
+        <remap from = "cmd_vel" to             = "$(arg joy_cmd_vel_topic)"/>
+        <param name = "scale_linear" value     = "0.6" />
+        <param name = "scale_angular" value    = "0.4" />
+        <param name = "axis_linear" value      = "1.0" />
+        <param name = "axis_angular" value     = "3.0" />
+        <param name = "speed_up_vel" value     = "0.5" />
+    </node>
+
+    <node pkg="campusrover_driver" name="lcr_cmd_vel_mux" type="lcr_cmd_vel_mux">
+        <remap from="input/joy_cmd_vel" to="$(arg joy_cmd_vel_topic)"/>
+        <remap from="input/nav_cmd_vel" to="input/nav_cmd_vel"/>
+        <remap from="output/cmd_vel" to="output/cmd_vel"/>
+        <param name="joy_mode_button" value="7.0" />
+        <param name="nav_mode_button" value="0.0" />
+        <param name="stop_mode_button" value="1.0" />
+        <param name="release_mode_button" value="3.0" />
+    </node>
+
+    <group if="$(arg calibration_mode)">
+        <node name="calibration" pkg="campusrover_driver" type="calibration" output="screen"/>
+    </group>
+    
+
+    <!-- Common sensors -->
+    <include file="$(find campusrover_teb)/launch/sensors/velodyne_VLP16.launch_notic.xml" />
+    <include file="$(find campusrover_teb)/launch/sensors/urg10lx.launch.xml" />
+    <include file="$(find campusrover_teb)/launch/sensors/xsens_imu.launch.xml" />
+
+    <!-- Static transform -->
+    <include file="$(find campusrover_sensors)/launch/static_transform.launch" />
+    
+</launch>  

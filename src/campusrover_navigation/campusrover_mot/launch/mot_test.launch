@@ -1,0 +1,94 @@
+<launch>
+
+    <arg name="bag_file" default="$(env HOME)/spot/spot_data/bags/0822_spot_mot.bag"/>
+    <arg name="map_file_ros" default="$(env HOME)/spot/spot_data/maps/3F.yaml"/>
+    <arg name="is_img_label" default="false"/>
+    <arg name="is_show_label_model" default="false"/>
+
+    <param name="use_sim_time" value="true" />
+    <node name="playbag" pkg="rosbag" type="play" args="--clock $(arg bag_file)" />
+
+    <param name="robot_description" command="$(find xacro)/xacro $(find spot_description)/urdf/spot.urdf.xacro"/>
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+    <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
+
+    <node pkg="tf" type="static_transform_publisher" name="map_to_body" args="-0.8755296397672115 -7.416989200670808 0.13 0.0 0.0 -0.7039157967560926 0.7102834301018399 /map /body 100"/>
+
+    <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file_ros)">
+        <remap from="map" to="global_map"/>
+    </node>
+
+    <node pkg="campusrover_costmap" type="global_costmap_node" name="global_costmap_node">
+        <remap from="global_costmap" to="global_costmap"/>
+        <remap from="map" to="global_map"/>
+        <param name="costmap_resolution" value="0"/>
+        <param name="inflation_radius" value="0.8"/>
+        <param name="cost_scaling_factor" value="10"/>
+    </node>
+
+    <node pkg="campusrover_mot" type="campusrover_mot_node" name="campusrover_mot_node" output="screen">
+        <remap from="points"                to="/velodyne_filter_points"/>
+        <remap from="/scan"                 to="/hokuyo_scan"/>
+        <remap from="image"                 to="/zed_node/rgb/image_rect_color"/>
+        <remap from="camera_info"           to="/zed_node/rgb/camera_info"/>
+
+        <param name="detection_area_min_x"  value="-10.0"/>
+        <param name="detection_area_max_x"  value="10.0"/>
+        <param name="detection_area_min_y"  value="-10.0"/>
+        <param name="detection_area_max_y"  value="0.0"/>
+        <param name="detection_area_min_z"  value="-0.7"/>
+        <param name="detection_area_max_z " value="0.5"/>
+        <param name="track_dead_time "      value="1.0"/>
+        <param name="track_older_age "      value="0.5"/>
+        <param name="cluster_dist "         value="0.35"/>
+        <param name="false_alarm_min "      value="10"/>
+        <param name="false_alarm_max "      value="3000"/>
+
+        <param name="weight_min_tolerate"   value="0.01"/>
+        <param name="cov_scale"             value="30"/>
+        <param name="inherit_ratio"         value="0.6"/>
+
+        <param name="history_length"        value="10"/>
+        <param name="anchor_dist_threshold" value="0.1"/>
+        <param name="speed_threshold"       value="0.1"/>
+
+        <param name="trackers_update_period"    value="0.05"/>
+        <param name="label_update_period"       value="0.1"/>
+        <param name="thread_num"                value="4"/>
+
+        <param name="map_frame"             value="map"/>
+        <param name="laser_frame"           value="hokuyo_link"/>
+        <param name="camera_frame"          value="camera_link"/>
+
+        <param name="h_scale"               value="2.0"/>
+        <param name="v_scale"               value="3.0"/>
+        <param name="sync_tolerate"         value="0.08"/>
+        <param name="tf_tolerate"           value="0.1"/>
+
+        <param name="debug_mode"                value="true"/>
+        <param name="is_use_laser"              value="false"/>
+        <param name="is_map_filter"             value="true"/>
+        <param name="is_img_label"              value="$(arg is_img_label)"/>
+        <param name="only_dynamic_obstacle"     value="false"/>
+    </node>
+
+    <include if="$(arg is_img_label)" file="$(find yolo_ros)/launch/yolo_ros_server.launch">
+        <arg name="yolo_v5"                 value="true"/>
+        <arg name="yolo_weight_file"        value="$(find yolo_ros)/weights/yolov5.pt"/>
+        <arg name="use_cpu"                 value="ture"/>
+        <arg name="confident"               value="0.3"/>
+
+    </include>
+
+    <node if="$(arg is_show_label_model)" pkg="campusrover_msgs_visualization" type="tracked_obstacle_msg_marker_node" name="tracked_obstacle_msg_marker_node">
+        <remap from="tracked_obstacles" to="tracked_label_obstacle"/>
+        <remap from="obstacles_marker" to="obstacles_marker_3d_marker"/>
+        <remap from="obstacles_angles" to="obstacles_angles"/>
+
+        <param name="map_frame"         value="map"/>
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz" required="true"
+        args="-d $(find campusrover_mot)/rviz/show.rviz" />
+
+</launch>

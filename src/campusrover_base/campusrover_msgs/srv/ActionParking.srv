@@ -1,0 +1,8 @@
+uint8 CONTROL_MODE_DEFAULT=0
+uint8 CONTROL_MODE_PID=1
+uint8 CONTROL_MODE_REVERSE=2
+uint8 control_mode
+float32 max_linear_vel
+float32 max_angular_vel
+---
+string msg

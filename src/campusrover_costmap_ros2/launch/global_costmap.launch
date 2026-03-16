@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!-- 
+  全域成本地圖啟動文件
+  功能：啟動全域成本地圖生成系統
+  包含：地圖服務器、RViz 可視化、全域成本地圖節點
+-->
+<launch>
+  <!-- 地圖文件路徑參數 -->
+  <arg name="map_file" default="$(find campusrover_costmap)/test_data/stata.yaml"/>
+  
+  <!-- 地圖服務器：載入並發布靜態地圖 -->
+  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)"/>
+  
+  <!-- RViz 可視化：顯示全域成本地圖 -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find campusrover_costmap)/rviz/global_costmap.rviz" />
+  
+  <!-- 全域成本地圖節點：生成膨脹後的全域成本地圖 -->
+  <node pkg="campusrover_costmap" type="global_costmap_node" name="global_costmap_node" output="screen">
+    <!-- 話題重映射 -->
+    <remap from="global_costmap" to="global_costmap"/>
+    <remap from="map" to="map"/>
+    
+    <!-- 成本地圖參數配置 -->
+    <param name="costmap_resolution" value="0"/>    <!-- 解析度 (0=使用原始地圖解析度) -->
+    <param name="inflation_radius" value="0.3"/>    <!-- 膨脹半徑 (公尺) -->
+    <param name="cost_scaling_factor" value="10"/>  <!-- 成本縮放因子 -->
+  </node>
+</launch>

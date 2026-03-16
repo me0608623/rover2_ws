@@ -1,0 +1,76 @@
+<?xml version='1.0'?>
+
+<!-- urdf: unified robot description format -->
+
+<robot name="campusrover">
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <!-- describe robot's appearance -->
+      <geometry>
+        <mesh filename="package://campusrover_description/meshes/rover_v2_0/rover_base_meter_rn.dae" />
+      </geometry>
+    </visual>
+  </link>
+  <link name="wheel_left">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <mesh filename="package://campusrover_description/meshes/rover_v2_0/wheel_main_rn.dae" />
+      </geometry>
+    </visual>
+  </link>
+  <link name="wheel_right">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <mesh filename="package://campusrover_description/meshes/rover_v2_0/wheel_main_rn.dae" />
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="wheel_caster_left">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <mesh filename="package://campusrover_description/meshes/rover_v2_0/wheel_caster_group_rn.dae" />
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="wheel_caster_right">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <mesh filename="package://campusrover_description/meshes/rover_v2_0/wheel_caster_group_rn.dae" />
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="base_link_wheel_left" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_left"/>
+    <origin xyz="0 0.2605 0" rpy="1.57075 0 0" />
+    <axis xyz="0 0 1" /> 
+  </joint>
+
+  <joint name="base_link_wheel_right" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_right"/>
+    <origin xyz="0 -0.2605 0" rpy="-1.57075 0 0" />
+    <axis xyz="0 0 1" /> 
+  </joint>
+  <joint name="base_link_wheel_caster_left" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_caster_left"/>
+    <origin xyz="-0.381 0.15 0.053" rpy="-1.57075 0 0" />
+    <axis xyz="0 1 0" /> 
+  </joint>
+  <joint name="base_link_wheel_caster_right" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_caster_right"/>
+    <origin xyz="-0.381 -0.15 0.053" rpy="-1.57075 0 0" />
+    <axis xyz="0 1 0" /> 
+  </joint>
+</robot>

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>campusrover_driver</name>
+  <version>0.0.0</version>
+  <description>The campusrover_driver package</description>
+
+  <maintainer email="tucker@todo.todo">tucker</maintainer>
+  <license>TODO</license>
+
+  <!-- buildtool_depend is ament_cmake for ROS2 -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- build dependencies -->
+  <build_depend>rclcpp</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>campusrover_msgs</build_depend>
+
+  <!-- run dependencies -->
+  <exec_depend>rclcpp</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>tf2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>campusrover_msgs</exec_depend>
+
+  <export>
+      <!-- Other tools can request additional information be placed here -->
+      <!-- This is ament specific tag -->
+      <build_type>ament_cmake</build_type>
+      <!-- This package is part of the rosidl interface packages group -->
+      <member_of_group>rosidl_interface_packages</member_of_group>
+      <!-- This package is ament_cmake based package -->
+  </export>
+</package>

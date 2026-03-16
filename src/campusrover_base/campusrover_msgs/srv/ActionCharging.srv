@@ -1,0 +1,7 @@
+uint8 CONNECTING=1
+uint8 UNCONNECTING=2
+string location
+int32 floor
+uint8 charging_pile_id
+uint8 status
+---

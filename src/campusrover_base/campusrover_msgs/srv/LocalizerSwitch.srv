@@ -1,0 +1,10 @@
+uint8 MODE_DISABLE = 0
+uint8 MODE_ENABLE = 1
+uint8 MODE_PURE_2D_SCANMATCHING = 2
+
+uint8 mode
+string building
+string floor
+string init_point
+---
+string message

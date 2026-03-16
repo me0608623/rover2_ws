@@ -1,0 +1,4 @@
+imu_node:
+  ros__parameters:
+    port: "/dev/hands_imu"
+    baudrate: 921600

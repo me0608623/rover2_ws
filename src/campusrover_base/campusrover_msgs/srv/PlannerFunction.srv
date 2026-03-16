@@ -1,0 +1,11 @@
+uint8 MODE_GLOBAL_PATH = 1
+uint8 MODE_ELEVATOR_PATH = 2
+uint8 MODE_BUTTON_PARKING = 3
+uint8 MODE_PULLOVER_PATH = 4
+uint8 MODE_WARP_DEVICE = 5
+std_msgs/Bool action
+std_msgs/Bool direction_inverse
+std_msgs/Bool obstacle_avoidance
+uint8 mode
+geometry_msgs/Twist speed_parameter
+---

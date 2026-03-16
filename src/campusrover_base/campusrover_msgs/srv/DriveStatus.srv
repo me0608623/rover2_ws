@@ -1,0 +1,5 @@
+uint8 DRIVE_STATUS_STOP = 0
+uint8 DRIVE_STATUS_RELEASE = 1
+uint8 DRIVE_STATUS_CMD_CONTROL = 2
+uint8 drive_status
+---

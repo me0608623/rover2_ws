@@ -1,0 +1,156 @@
+<?xml version='1.0'?>
+
+<!-- urdf: unified robot description format -->
+
+<robot name="campusrover">
+
+  <!-- materials color description -->
+  <!-- <xacro:include filename="package://campusrover_description/urdf/materials.xacro" /> -->
+  <material name="green">
+    <color rgba="0 0.8 0 1"/>
+  </material>
+  <material name="black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+
+  <material name="blue">
+    <color rgba="0.0 0.0 0.8 1.0"/>
+  </material>
+
+  <material name="grey">
+    <color rgba="0.1 0.1 0.1 1.0"/>
+  </material>
+
+  <material name="orange">
+    <color rgba="1.0 0.4235 0.0392 1.0"/>
+  </material>
+
+  <material name="brown">
+    <color rgba="0.8705 0.8117 0.7647 1.0"/>
+  </material>
+
+  <material name="red">
+    <color rgba="0.8 0.0 0.0 1.0"/>
+  </material>
+
+  <material name="white">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+
+  <!-- Link Define -->
+  <link name="base_footprint">
+    <visual>
+      <origin xyz="-0.2 0.0 0" rpy="0 0 1.57"/>
+      <!-- describe robot's appearance -->
+      <geometry>
+        <mesh filename="package://campusrover_description/meshes/campus_rover.dae" />
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="base_link">
+  </link>
+
+  <link name="velodyne_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <cylinder length="0.038" radius="0.04" />
+      </geometry>
+      <material name="green" />
+    </visual>
+  </link>
+
+  <link name="ydlidar_back_link">
+    <visual>
+      <origin xyz="0.0 0.0 -0.01" />
+      <geometry>
+        <cylinder length="0.04" radius="0.035" />
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+
+  <link name="ydlidar_front_link">
+    <visual>
+      <origin xyz="0.0 0.0 -0.01" />
+      <geometry>
+        <cylinder length="0.04" radius="0.035" />
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+
+  <link name="imu_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="0.05 0.05 0.01" />
+      </geometry>
+      <material name="green" />
+    </visual>
+  </link>
+
+  <!-- robot arm -->
+  <link name="arm_link_1">
+    <visual>
+      <origin xyz="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.05 0.05 0.01"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+  </link>
+  <link name="rs_d435i_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.05 0.05 0.01"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+  </link>
+
+  <joint name="base_link_joint" type="fixed">
+    <parent link="base_footprint" />
+    <child link="base_link" />
+    <origin xyz="0.0 0.0 0.13" rpy="0 0 0" />
+  </joint>
+
+  <joint name="ydlidar_back_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="ydlidar_back_link" />
+    <origin xyz="-0.52 0 0.03" rpy="3.14 0 3.16" />
+  </joint>
+
+  <joint name="ydlidar_front_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="ydlidar_front_link" />
+    <origin xyz="0.2 0.08 0" rpy="0 0 -0.053"/>
+  </joint>
+
+  <joint name="velodyne_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="velodyne_link" />
+    <origin xyz="-0.02 0 1.3" rpy="0 0 0" />
+  </joint>
+
+  <joint name="imu_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="imu_link" />
+    <origin xyz="-0.08 -0.15 0.08" rpy="0 0 1.5708" />
+  </joint>
+
+  <!-- for robot arm -->
+  <joint name="arm_link_1_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_link_1"/>
+    <origin rpy="0 0 0" xyz="0 0 0.5"/>
+  </joint>
+  <joint name="camera_link_joint" type="fixed">
+    <parent link="arm_link_1"/>
+    <child link="rs_d435i_link"/>
+    <origin rpy="0 0 0" xyz="-0.03 -0.09 0.05"/>
+  </joint>
+
+</robot>

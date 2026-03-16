@@ -1,0 +1,3 @@
+string[] rooms
+---
+campusrover_msgs/State[] states

@@ -1,0 +1,9 @@
+# Campus Rover 全域成本地圖參數配置 (ROS2 版本)
+# 適用於 ROS2 Foxy
+
+global_costmap_node:
+  ros__parameters:
+    # 成本地圖參數
+    costmap_resolution: 0.5   # 成本地圖解析度 (0=使用原始地圖解析度)
+    inflation_radius: 0.3     # 膨脹半徑 (公尺)
+    cost_scaling_factor: 10.0 # 成本縮放因子

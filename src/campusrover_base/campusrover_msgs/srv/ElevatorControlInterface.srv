@@ -1,0 +1,4 @@
+int8 init_floor
+string elevator_id
+int8 target_floor
+---

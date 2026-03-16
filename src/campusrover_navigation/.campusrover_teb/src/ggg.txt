@@ -1,0 +1,40 @@
+std::vector<geometry_msgs::Pose> pose_array;
+
+    double robot2goal_dist_ = robot2goal_dist*robot2goal_dist;
+
+    global_path_mutex.lock();
+    int path_size = global_path.poses.size();
+    min_dist = (path_size > 0) ? pow((global_path.poses[0].pose.position.x - now_pose.position.x),2) + pow((global_path.poses[0].pose.position.y - now_pose.position.y),2) : -1;
+
+    for(int i = 0; i < path_size; i++){
+        dist = pow((global_path.poses[i].pose.position.x - now_pose.position.x),2) + pow((global_path.poses[i].pose.position.y - now_pose.position.y),2);
+
+        if(dist <= robot2goal_dist_){
+            is_find = true;
+            pose_array.push_back(global_path.poses[i].pose);
+
+        }else if(dist <= min_dist){
+            min_dist_idx = i;
+            min_dist = dist;
+        }
+    }
+
+    if(!is_find && min_dist_idx != -1){
+        is_find = true;
+        goal_pose = global_path.poses[min_dist_idx].pose;
+
+    }else if(is_find){
+        int poses_size = pose_array.size();
+
+        min_dist = pow((pose_array[0].position.x - global_path.poses[path_size-1].pose.position.x),2) + pow((pose_array[0].position.y - global_path.poses[path_size-1].pose.position.y),2);
+        for(int i = 0; i < poses_size; i++){
+            dist = pow((pose_array[i].position.x - global_path.poses[path_size-1].pose.position.x),2) + pow((pose_array[i].position.y - global_path.poses[path_size-1].pose.position.y),2);
+
+            if(dist <= min_dist){
+                min_dist_idx = i;
+                min_dist = dist;
+            }
+        }
+
+        goal_pose = pose_array[min_dist_idx];
+    }

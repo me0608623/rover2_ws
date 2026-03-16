@@ -1,0 +1,4 @@
+string origin
+string[] destination
+---
+nav_msgs/Path[] routing

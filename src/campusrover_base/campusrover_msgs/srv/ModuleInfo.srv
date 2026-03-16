@@ -1,0 +1,6 @@
+string building
+string floor
+---
+string frame_id
+campusrover_msgs/NodeInfo[] node
+campusrover_msgs/RoomConnected[] connections

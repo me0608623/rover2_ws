@@ -1,0 +1,28 @@
+# Campus Rover 局部成本地圖參數配置 (ROS2 版本)
+# 適用於 ROS2 Foxy
+
+campusrover_costmap:
+  ros__parameters:
+    # 基本參數
+    base_frame: "base_link"
+    
+    # 地圖尺寸參數
+    map_size_width: 6.0      # 地圖寬度 (公尺)
+    map_size_height: 6.0     # 地圖高度 (公尺)
+    map_resolution: 0.1     # 地圖解析度 (公尺/像素)
+    map_update_frequency: 10.0 # 地圖更新頻率 (Hz)
+    
+    # 障礙物檢測參數
+    max_obstacle_height: 1.7  # 障礙物最大高度 (公尺)
+    min_obstacle_height: -1.2 # 障礙物最小高度 (公尺)
+    
+    # # 膨脹參數
+    # inflation_radius: 0.8   # 膨脹半徑 (公尺)
+    # cost_scaling_factor: 2.0 # 成本縮放因子
+    
+    # 膨脹參數
+    inflation_radius: 0.45   # 膨脹半徑 (公尺)
+    cost_scaling_factor: 5.0 # 成本縮放因子
+
+    # 可視化參數
+    pcl_viz: false           # 是否啟用 PCL 可視化

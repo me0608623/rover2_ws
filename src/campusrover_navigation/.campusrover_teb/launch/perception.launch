@@ -1,0 +1,94 @@
+<launch>
+    <arg name="map_file_ros" default="$(env HOME)/campusrover_maps/itc/3F.yaml"/>
+
+    <include file="$(find campusrover_cartographer)/launch/launch_localizer.launch.xml" >
+        <arg name="carto_basename_default" value="hokuyo_odom_localization.lua"/>
+        <arg name="map_file" value="itc/3F.pbstream"/>
+    </include>
+
+    <arg name="enable_one_way"   default="false"/>
+    <node pkg="node_routing_engine" type="routing_engine_node" name="routing_engine_node" output="screen">
+        <param name="enable_one_way"        type="bool"             value="$(arg enable_one_way)" />
+        <param name="use_csv"               type="bool"             value="true" />
+        <param name="path_orienation"       type="bool"             value="true"/>
+        <param name="file_path1"            type="string"           value="$(find node_routing_engine)/node_module/3F_modul.csv" />
+        <param name="file_path2"            type="string"           value="$(find node_routing_engine)/node_module/3F_modul.csv" />
+        <param name="file_path3"            type="string"           value="$(find node_routing_engine)/node_module/3F_modul.csv" />
+        <param name="file_node_info"        type="string"           value="$(find node_routing_engine)/node_module/3F_info.csv" />
+        <param name="connect_method"        type="string"           value="BezierCurve" />       <!--common, BezierCurve, BSplineCurve-->
+        <param name="path_resolution"       type="double"           value="0.05" />         <!--(unit:m/pt)-->
+        <param name="bezier_length"         type="double"           value="1.5" />            <!--(unit:m)-->
+        <param name="bezier_resolution"     type="double"           value="0.01" />         <!--The smaller the denser-->
+        <param name="BSpline_k"             type="int"              value="3" />
+        <param name="BSpline_resolution"    type="double"           value="0.001" />        <!--The smaller the denser-->
+		<param name="path_frame"   		 	type="string"           value="map" />
+    </node>
+
+    <arg name = "node_start_delay"       default = "1.0" />
+    <arg name = "start_building"         default = "itc"/>
+    <arg name = "start_floor"            default = "3"/>
+    <arg name = "start_room"             default = "s"/>
+    <node pkg="campusrover_teb" type="teb_manager.py" name="teb_manager_node" output="screen"
+            launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+        <param name="start_building"                        value="$(arg start_building)"/>
+        <param name="start_floor"         type="string"     value="$(arg start_floor)"/>
+        <param name="start_room"          type="string"     value="$(arg start_room)"/>
+        <param name="node_start_delay"                      value="$(arg node_start_delay)"/>
+    </node>
+
+    <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file_ros)">
+        <remap from="map" to="global_map"/>
+    </node>
+
+    <node pkg="campusrover_costmap" type="global_costmap_node" name="global_costmap_node">
+        <remap from="global_costmap" to="global_costmap"/>
+        <remap from="map" to="global_map"/>
+        <param name="costmap_resolution" value="0"/>
+        <param name="inflation_radius" value="0.8"/>
+        <param name="cost_scaling_factor" value="7"/>
+    </node>
+
+    <node pkg="campusrover_mot" type="campusrover_mot_node" name="campusrover_mot_node" output="screen">
+        <remap from="points"                to="/velodyne_points"/>
+        <remap from="image"                 to="/zed_node/rgb/image_rect_color"/>
+        <remap from="camera_info"           to="/zed_node/rgb/camera_info"/>
+        
+
+        <param name="detection_area_min_x"  value="-10.0"/>
+        <param name="detection_area_max_x"  value="10.0"/>
+        <param name="detection_area_min_y"  value="-10.0"/>
+        <param name="detection_area_max_y"  value="10.0"/>
+        <param name="detection_area_min_z"  value="-0.7"/>
+        <param name="detection_area_max_z " value="0.5"/>
+        <param name="track_dead_time "      value="1.0"/>
+        <param name="track_older_age "      value="0.5"/>
+        <param name="cluster_dist "         value="0.2"/>
+        <param name="false_alarm_min "      value="10"/>
+        <param name="false_alarm_max "      value="5000"/>
+
+        <param name="weight_min_tolerate"   value="0.01"/>
+        <param name="cov_scale"             value="30"/>
+        <param name="inherit_ratio"         value="0.6"/>
+
+        <param name="history_length"        value="10"/>
+        <param name="anchor_dist_threshold" value="0.1"/>
+        <param name="speed_threshold"       value="0.1"/>
+
+        <param name="trackers_update_period"    value="0.05"/>
+        <param name="label_update_period"       value="0.1"/>
+        <param name="thread_num"                value="4"/>
+
+        <param name="map_frame"             value="map"/>
+        <param name="camera_frame"          value="camera_front_project_link"/>
+
+        <param name="h_scale"               value="2.0"/>
+        <param name="v_scale"               value="3.0"/>
+        <param name="sync_tolerate"         value="0.08"/>
+        <param name="tf_tolerate"           value="0.1"/>
+
+        <param name="debug_mode"                value="true"/>
+        <param name="is_map_filter"             value="true"/>
+        <param name="is_img_label"              value="false"/>
+        <param name="only_dynamic_obstacle"     value="false"/>
+    </node>
+</launch>

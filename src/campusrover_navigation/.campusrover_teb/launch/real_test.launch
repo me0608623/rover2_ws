@@ -1,0 +1,18 @@
+<launch>
+    
+    <include file="$(find campusrover_teb)/launch/teb.launch">
+        <remap from="teb_cmd"                to="/input/nav_cmd_vel"/>
+        
+        <arg name="predict_step"          value="10"/>
+        <arg name="thread_num"            value="4"/>
+        <arg name="dt"                    value="0.5"/>
+        <arg name="teb_update_period"     value="0.1"/>
+        <arg name="robot2goal_dist"       value="1.7"/>
+        <arg name="map_frame"             value="map"/>
+        <arg name="base_frame"            value="base_footprint"/>
+    </include>
+
+     <node name="rviz" pkg="rviz" type="rviz" required="true"
+            args="-d $(find campusrover_teb)/rviz/robot.rviz" /> 
+
+</launch>

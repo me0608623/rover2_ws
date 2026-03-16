@@ -1,0 +1,101 @@
+<launch>
+
+    <param name="robot_description"
+            textfile="$(find campusrover_description)/urdf/campusrover.urdf" />
+
+    <!-- <arg name="map_file_ros" default="$(env HOME)/campusrover_maps/itc/itc_3f_hokuyo.yaml"/> -->
+    <arg name="map_file_ros" default="$(env HOME)/campusrover_maps/itc/3F.yaml"/>
+
+    <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file_ros)">
+        <remap from="map" to="global_map"/>
+    </node>
+
+    <!-- <node pkg="tf" type="static_transform_publisher" name="world_to_map" args="0 0 0 0 0 0 1 /world /map 100"/> -->
+    <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="1.057560920715332 -9.132543563842773 0 0 0 -0.9994699329400379 0.026937400880946795 /map /odom 50"/>
+
+    <include file="$(find campusrover_sensors)/launch/static_transform.launch" />
+
+    <!-- <include file = "$(find campusrover_networking)/launch/databased_handler.launch" />
+
+    <include file="$(find routes_visualization)/launch/routes_visualization.launch" >
+        <arg name="debug" value="false"/>
+    </include> -->
+
+
+    <arg name="enable_one_way"   default="false"/>
+    <node pkg="node_routing_engine" type="routing_engine_node" name="routing_engine_node" output="screen">
+        <param name="enable_one_way"        type="bool"             value="$(arg enable_one_way)" />
+        <param name="use_csv"               type="bool"             value="true" />
+        <param name="path_orienation"       type="bool"             value="true"/>
+        <param name="file_path1"            type="string"           value="$(find node_routing_engine)/node_module/3F_modul.csv" />
+        <param name="file_path2"            type="string"           value="$(find node_routing_engine)/node_module/3F_modul.csv" />
+        <param name="file_path3"            type="string"           value="$(find node_routing_engine)/node_module/3F_modul.csv" />
+        <param name="file_node_info"        type="string"           value="$(find node_routing_engine)/node_module/3F_info.csv" />
+        <param name="connect_method"        type="string"           value="BezierCurve" />       <!--common, BezierCurve, BSplineCurve-->
+        <param name="path_resolution"       type="double"           value="0.05" />         <!--(unit:m/pt)-->
+        <param name="bezier_length"         type="double"           value="1.5" />            <!--(unit:m)-->
+        <param name="bezier_resolution"     type="double"           value="0.01" />         <!--The smaller the denser-->
+        <param name="BSpline_k"             type="int"              value="3" />
+        <param name="BSpline_resolution"    type="double"           value="0.001" />        <!--The smaller the denser-->
+		<param name="path_frame"   		 	type="string"           value="map" />
+    </node>
+
+    <node pkg="campusrover_costmap" type="global_costmap_node" name="global_costmap_node" output="screen">
+        <remap from="global_costmap" to="global_costmap"/>
+        <remap from="map" to="global_map"/>
+        <param name="costmap_resolution" value="0"/>
+        <param name="inflation_radius" value="0.8"/>
+        <param name="cost_scaling_factor" value="10"/>
+    </node>
+
+    <arg name = "node_start_delay"       default = "1.0" />
+    <arg name = "start_building"         default = "itc"/>
+    <arg name = "start_floor"            default = "3"/>
+    <arg name = "start_room"             default = "s"/>
+    <node pkg="campusrover_teb" type="teb_manager.py" name="teb_manager_node" output="screen"
+            launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+        <param name="start_building"                        value="$(arg start_building)"/>
+        <param name="start_floor"         type="string"     value="$(arg start_floor)"/>
+        <param name="start_room"          type="string"     value="$(arg start_room)"/>
+        <param name="node_start_delay"                      value="$(arg node_start_delay)"/>
+    </node>
+
+    <include file="$(find campusrover_teb)/launch/teb.launch">
+        <!-- <remap from="teb_cmd"                to="/input/nav_cmd_vel"/> -->
+        
+        <arg name="predict_step"          value="20"/>
+        <arg name="thread_num"            value="4"/>
+        <arg name="dt"                    value="0.5"/>
+        <arg name="teb_update_period"     value="0.1"/>
+        <arg name="robot2goal_dist"       value="3"/>
+        <arg name="map_frame"             value="map"/>
+        <arg name="base_frame"            value="base_footprint"/>
+    </include>
+
+    <node pkg="campusrover_sim_rviz" type="twist_odom_simulator_node" name="twist_odom_simulator_node">
+        <remap from="odom_gt" to="odom_gt"/>
+        <remap from="path_gt" to="path_gt"/>
+        <remap from="odom" to="odom"/>
+        <remap from="cmd_vel" to="input/nav_cmd_vel"/> 
+        <param name="odom_frame_id" value="odom"/>
+        <param name="robot_frame_id" value="base_footprint"/>
+        <param name="publish_tf" value="true"/>
+    </node>
+
+    <node pkg="campusrover_sim_rviz" type="obstacle_simulator" name="obstacle_simulator_node" output="screen"
+            launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+        <param name="odom_frame_id" value="odom"/>
+        <param name="robot_frame_id" value="base_link"/>
+    </node>
+
+    <node pkg="campusrover_mot" type="sim_mot.py" name="sim_mot_node" output="screen">
+        <param name="tracker_pub_period" value="0.1"/>
+        <param name="frame_id" value="map"/>
+        <param name="dimensions" value="0.5"/>
+    </node>
+
+
+    <node name="rviz" pkg="rviz" type="rviz" required="true"
+        args="-d $(find campusrover_teb)/rviz/show.rviz" />
+
+</launch>

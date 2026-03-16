@@ -1,0 +1,5 @@
+string building
+string floor
+string init_point
+---
+geometry_msgs/PoseStamped pose

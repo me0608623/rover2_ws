@@ -1,0 +1,24 @@
+can:
+  device: can0
+ros:
+  base_frame: base_footprint
+  odom_frame: odom
+  publish_tf: true
+  publish_odom: true
+  publish_rate: 20.0 # in Hz
+base:
+  wheel_base_length: 0.52793
+  right_wheel_diameter: 0.25524
+  left_wheel_diameter: 0.25644
+  reduction_ratio: 10
+  encoder_resolution: 10000
+driver:
+  acc_max: 1.2
+  acc_step: 0.1
+  dec_max: 1
+  dec_step: 0.05
+  vel_tolerance: 0.07
+  profile_omega_max: 1.2 
+  profile_omega_step: 0.15
+  omega_tolerance: 0.05
+  max_speed: 1.5

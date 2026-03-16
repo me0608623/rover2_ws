@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="online_test" default="false"/>
+    <!-- <include file="$(find campusrover_sim_rviz)/launch/twist_odom_simulator.launch">
+        <arg if="$(arg online_test)"  name="publish_tf" value="false"/>
+        <arg unless="$(arg online_test)"  name="publish_tf" value="true"/>
+    </include> -->
+
+    <include if="$(arg online_test)" file="$(find campusrover_driver)/launch/campusrover_driver.launch" />
+    
+    <node pkg="campusrover_driver" type="rostest_control_valiation" 
+          name="rostest_control_valiation" output="screen">
+        <remap from="cmd_vel" to="input/nav_cmd_vel"/>
+        <param name="waitting_time" value="5"/>
+        <param name="mov_dis" value="2"/>
+        <param name="turn_rad" value="1"/>
+        <param name="tar_velocity" value="0.1"/>
+        <param name="ctl_time_step" value="0.04"/>
+    </node>
+</launch>

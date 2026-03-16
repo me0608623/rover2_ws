@@ -1,0 +1,275 @@
+<?xml version='1.0'?>
+
+<!-- urdf: unified robot description format -->
+
+<robot name="campusrover">
+
+  <!-- materials color description -->
+  <!-- <xacro:include filename="package://campusrover_description/urdf/materials.xacro" /> -->
+  <material name="green">
+    <color rgba="0 0.8 0 1"/>
+  </material>
+  <material name="black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+
+  <material name="blue">
+    <color rgba="0.0 0.0 0.8 1.0"/>
+  </material>
+
+  <material name="grey">
+    <color rgba="0.1 0.1 0.1 1.0"/>
+  </material>
+
+  <material name="orange">
+    <color rgba="1.0 0.4235 0.0392 1.0"/>
+  </material>
+
+  <material name="brown">
+    <color rgba="0.8705 0.8117 0.7647 1.0"/>
+  </material>
+
+  <material name="red">
+    <color rgba="0.8 0.0 0.0 1.0"/>
+  </material>
+
+  <material name="white">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+
+  <!-- Link Define -->
+  <link name="base_footprint">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.02" radius="0.02" />
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <!-- describe robot's appearance -->
+      <geometry>
+        <mesh filename="package://campusrover_description/meshes/rover_v2_0/rover_charging.dae" />
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="velodyne_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <cylinder length="0.038" radius="0.05" />
+      </geometry>
+      <material name="green" />
+    </visual>
+  </link>
+
+  <link name="ydlidar_back_link">
+    <visual>
+      <origin xyz="0.0 0.0 -0.01" />
+      <geometry>
+        <cylinder length="0.04" radius="0.035" />
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+
+  <link name="ydlidar_front_link">
+    <visual>
+      <origin xyz="0.0 0.0 -0.01" />
+      <geometry>
+        <cylinder length="0.04" radius="0.035" />
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+
+  <link name="hokuyo_link">
+    <visual>
+      <origin xyz="0.0 0.0 -0.02" />
+      <geometry>
+        <cylinder length="0.07" radius="0.02" />
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+
+  <link name="imu_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="0.05 0.05 0.01" />
+      </geometry>
+      <material name="green" />
+    </visual>
+  </link>
+
+  <link name="rs_d415_front_project_link" />
+
+  <link name="rs_d415_back_project_link" />
+
+  <!-- charging table link-->
+  <link name="linear_actuator_1">
+      <visual>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <geometry>
+              <!-- <box size="1 1 1" /> -->
+              <mesh filename="package://campusrover_arm_description/meshes/linear_actuator_1.dae" />
+          </geometry>
+      </visual>
+  </link>
+
+  <link name="linear_actuator_2">
+      <visual>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <geometry>
+              <mesh filename="package://campusrover_arm_description/meshes/linear_actuator_2.dae" />
+          </geometry>
+      </visual>
+  </link>
+
+  <link name="linear_actuator_3">
+      <visual>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <geometry>
+              <mesh filename="package://campusrover_arm_description/meshes/linear_actuator_3.dae" />
+          </geometry>
+      </visual>
+  </link>
+
+  <link name="linear_actuator_4">
+      <visual>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <geometry>
+              <mesh filename="package://campusrover_arm_description/meshes/linear_actuator_4.dae"/>
+          </geometry>
+      </visual>
+  </link>
+
+  <link name="linear_actuator_5">
+      <visual>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <geometry>
+              <mesh filename="package://campusrover_arm_description/meshes/linear_actuator_5.dae" />
+          </geometry>
+      </visual>
+  </link>
+
+  <link name="rs_d435i_link">
+      <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0 1.57 0"/>
+      <geometry>
+          <cylinder length="0.02" radius="0.02" />
+      </geometry>
+      <material name="black" />
+      </visual>
+  </link>
+
+  <link name="tag_detection_link">
+  </link>
+
+
+  <joint name="base_link_joint" type="fixed">
+    <parent link="base_footprint" />
+    <child link="base_link" />
+    <origin xyz="0.0 0.0 0.13" rpy="0 0 0" />
+  </joint>
+
+  <joint name="ydlidar_back_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="ydlidar_back_link" />
+    <origin xyz="-0.43 0.162 0.2557" rpy="0 0 2.269" />
+  </joint>
+
+  <joint name="ydlidar_front_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="ydlidar_front_link" />
+    <origin xyz="0.1647 -0.1647 0.2557" rpy="0 0 -0.87266" />
+  </joint>
+
+  <joint name="velodyne_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="velodyne_link" />
+    <origin xyz="-0.116 0 1.355" rpy="0 0 1.6" />
+  </joint>
+
+  <joint name="velodyn_camera_front_project_joint" type="fixed">
+    <parent link="velodyne_link" />
+    <child link="rs_d415_front_project_link" />
+    <origin xyz="-0.14134196 -0.0565176  -0.03522975" rpy="-1.59252615 0.0079411 -3.03141628" />
+  </joint>
+
+  <joint name="velodyn_camera_back_project_joint" type="fixed">
+    <parent link="velodyne_link" />
+    <child link="rs_d415_back_project_link" />
+    <origin xyz="-0.00397044 -0.01088965  0.25934596" rpy="-1.74026506 0.02124333 0.00626759" />
+  </joint>
+
+  <joint name="imu_link_joint" type="fixed">
+    <parent link="velodyne_link" />
+    <child link="imu_link" />
+    <origin xyz="-0.02 0 -0.1" rpy="0 0 0" />
+  </joint>
+
+  <joint name="hokuyo_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="hokuyo_link" />
+    <origin xyz="-0.06 0.0 1.29" rpy="0 0 0" />
+  </joint>
+
+  <!-- charging table joint-->
+  <joint name="table_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="linear_actuator_1" />
+    <origin xyz="-0.06 -0.185 0.4225" rpy="0 0 0" />
+  </joint>
+
+  <joint name="joint_z" type="prismatic">
+      <origin xyz="0.0 -0.1305 0.45" rpy="0 0 0" />
+      <axis xyz="0 0 1" />
+      <parent link="linear_actuator_1"/>
+      <child link="linear_actuator_2"/>
+      <limit effort="1000.0" lower="0" upper="0.35" velocity="1.0" />
+  </joint>
+
+  <joint name="joint_y" type="prismatic">
+      <origin xyz="-0.2096 0.25 -0.12522" rpy="0 0 0" />
+      <axis xyz="0 1 0" />
+      <parent link="linear_actuator_2"/>
+      <child link="linear_actuator_3"/>
+      <limit effort="1000.0" lower="0" upper="0.35" velocity="1.0" />
+  </joint>
+
+  <joint name="joint_x" type="prismatic">
+      <origin xyz="0.03 0 -0.1615" rpy="0 0 0" />
+      <axis xyz="1 0 0" />
+      <parent link="linear_actuator_3"/>
+      <child link="linear_actuator_4"/>
+      <limit effort="1000.0" lower="0" upper="0.18" velocity="1.0" />
+  </joint>
+
+  <joint name="joint_yaw" type="revolute">
+      <origin xyz="0.11618 0 0" rpy="0 0 0" />
+      <axis xyz="1 0 0" />
+      <parent link="linear_actuator_4"/>
+      <child link="linear_actuator_5"/>
+      <limit effort="1000.0" lower="-0.8" upper="0.8" velocity="1.0" />
+  </joint>
+
+  <joint name="linear_actuator_5_camera_link" type="fixed">
+      <parent link="linear_actuator_5" />
+      <child link="rs_d435i_link" />
+      <origin xyz="0.048 0.0085 0.0756" rpy="0 0 0" />
+  </joint>
+
+  <joint name="base_link_tag_detection" type="fixed">
+      <parent link="base_link" />
+      <child link="tag_detection_link" />
+      <origin xyz="-0.06 0.02 0.68" rpy="-1.57 0 -1.57" />
+  </joint>
+
+
+</robot>

@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!-- 
+  Campus Rover 成本地圖套件配置文件 (ROS2 版本)
+  功能：定義套件依賴、維護者信息和編譯配置
+-->
+<package format="3">
+  <name>campusrover_costmap_ros2</name>
+  <version>2.0.0</version>
+  <description>
+    Campus Rover 成本地圖生成套件 (ROS2 Foxy 版本)
+    提供局部和全域成本地圖生成功能，用於機器人導航避障
+    支援多種感測器輸入和即時障礙物檢測
+    專為 Ubuntu 20.04 + ROS2 Foxy 環境設計
+  </description>
+
+  <!-- 維護者信息 -->
+  <maintainer email="luke@campusrover.org">Luke - Campus Rover Team</maintainer>
+
+  <!-- 授權信息 -->
+  <license>MIT</license>
+
+  <!-- 編譯工具依賴 (ROS2) -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  
+  <!-- ROS2 依賴項目 -->
+  <depend>rclcpp</depend>                       <!-- ROS2 C++ 客戶端 -->
+  <depend>rclpy</depend>                        <!-- ROS2 Python 客戶端 -->
+  <depend>std_msgs</depend>                     <!-- 標準消息類型 -->
+  <depend>sensor_msgs</depend>                  <!-- 感測器消息類型 -->
+  <depend>nav_msgs</depend>                     <!-- 導航消息類型 -->
+  <depend>geometry_msgs</depend>                <!-- 幾何消息類型 -->
+  <depend>tf2</depend>                          <!-- TF2 變換庫 -->
+  <depend>tf2_ros</depend>                      <!-- TF2 ROS 整合 -->
+  <depend>tf2_geometry_msgs</depend>            <!-- TF2 幾何消息 -->
+  <depend>tf2_eigen</depend>                    <!-- TF2 與 Eigen 整合 -->
+  <depend>pcl_ros</depend>                      <!-- PCL ROS2 整合 -->
+  <depend>pcl_conversions</depend>              <!-- PCL 轉換工具 -->
+  <depend>laser_geometry</depend>               <!-- 雷射幾何轉換 -->
+  <!-- Foxy 版本註解：Nav2 在 Foxy 中可能需要不同的包名 -->
+  <!-- <depend>nav2_map_server</depend> -->
+  <!-- 如果需要地圖服務器，在 Foxy 中使用： -->
+  <!-- <depend>map_server</depend> -->
+  
+  <!-- 編譯時依賴 -->
+  <build_depend>eigen3_cmake_module</build_depend>
+  <build_depend>libpcl-all-dev</build_depend>   <!-- PCL 開發庫 -->
+  
+  <!-- 執行時依賴 -->
+  <exec_depend>libpcl-all</exec_depend>         <!-- PCL 運行庫 -->
+
+
+  <!-- ROS2 導出標籤 -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

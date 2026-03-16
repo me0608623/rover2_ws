@@ -1,0 +1,12 @@
+#!/usr/bin/python3.10
+
+import sys
+import os
+
+# 確保使用正確的 Python 路徑
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', 'local', 'lib', 'python3.10', 'site-packages'))
+
+from aitstar_path_planner.aitstar_visualizer import main
+
+if __name__ == '__main__':
+    main()

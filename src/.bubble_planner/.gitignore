@@ -1,0 +1,10 @@
+log/
+*.swp
+.idea/
+.vscode/
+bags/
+\n+
+
+bubble_mpc/bubble_mpc_model/acados_ocp.json
+bubble_mpc/bubble_mpc_model/c_generated_code/
+bubble_mpc/bubble_mpc_model/__pycache__/

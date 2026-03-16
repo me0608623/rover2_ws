@@ -1,0 +1,8 @@
+string location
+int32 floor
+geometry_msgs/TransformStamped tf
+campusrover_msgs/Room[] rooms
+campusrover_msgs/RoomConnected[] connections
+---
+string code
+string message

@@ -1,0 +1,6 @@
+image: stata.pgm
+resolution: 0.05
+origin: [-130.7386688232422, -117.8166397094727, 0]
+occupied_thresh: 0.51
+free_thresh: 0.49
+negate: 0

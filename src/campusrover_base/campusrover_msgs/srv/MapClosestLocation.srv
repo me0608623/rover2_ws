@@ -1,0 +1,5 @@
+string building
+string floor
+geometry_msgs/PoseStamped robot_pose
+---
+string closest_point
