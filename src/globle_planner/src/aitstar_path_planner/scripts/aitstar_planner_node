@@ -442,7 +442,7 @@ class AITStarPlannerNode(Node):
                 self.global_frame,
                 msg.header.frame_id,
                 rclpy.time.Time(),
-                timeout=rclpy.time.Duration(seconds=0.5)
+                timeout=rclpy.time.Duration(seconds=0.05)
             )
             
             # 手動應用變換
@@ -591,12 +591,16 @@ class AITStarPlannerNode(Node):
             f'開始規劃: {start_pos} -> {goal_pos}'
         )
 
-        # 重新初始化規劃器邊界（如果需要）
-        bounds_min, bounds_max = self.collision_checker.get_map_bounds()
-        self.planner.bounds_min = bounds_min
-        self.planner.bounds_max = bounds_max
-        self.planner.sampler.bounds_min = bounds_min
-        self.planner.sampler.bounds_max = bounds_max
+        # 將搜尋邊界縮小到起點/終點附近，避免在巨大地圖全域採樣
+        map_bounds_min, map_bounds_max = self.collision_checker.get_map_bounds()
+        margin = 15.0  # 在起點/終點的包圍盒外擴 15 公尺
+        pts = np.vstack([start_pos, goal_pos])
+        search_min = np.maximum(pts.min(axis=0) - margin, map_bounds_min)
+        search_max = np.minimum(pts.max(axis=0) + margin, map_bounds_max)
+        self.planner.bounds_min = search_min
+        self.planner.bounds_max = search_max
+        self.planner.sampler.bounds_min = search_min
+        self.planner.sampler.bounds_max = search_max
 
         # 執行規劃
         import time as time_module

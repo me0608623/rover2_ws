@@ -104,7 +104,7 @@ def generate_launch_description():
     # --- Map Server Argument ---
     map_file_arg = DeclareLaunchArgument(
         'map_file',
-        default_value='/home/aa/maps/3v3F.yaml',
+        default_value='/home/aa/maps/4v3F.yaml',
         description='靜態地圖路徑 (同時供 AIT* 規劃 + global_costmap 膨脹 + MOT 過濾)'
     )
 
@@ -379,7 +379,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'costmap_resolution': 0.0,
-            'inflation_radius': 0.3,
+            'inflation_radius': 0.5,
             'cost_scaling_factor': 10.0,
         }],
         remappings=[

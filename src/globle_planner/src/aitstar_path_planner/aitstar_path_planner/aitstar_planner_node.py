@@ -251,6 +251,29 @@ class OccupancyGridCollisionChecker:
         
         return True
     
+    def get_obstacle_distance(self, state: State) -> float:
+        """回傳到最近障礙物的距離 (使用膨脹地圖的簡易估算)"""
+        pos = state.position
+        if self.inflated_map is None:
+            return float('inf')
+
+        mx, my = self.world_to_map(pos)
+        if mx < 0 or mx >= self.map_width or my < 0 or my >= self.map_height:
+            return 0.0
+
+        # 從當前位置向外搜尋最近的障礙物格子
+        max_search = int(np.ceil(self.robot_radius * 3 / self.map_resolution))
+        for r in range(0, max_search + 1):
+            for di in range(-r, r + 1):
+                for dj in range(-r, r + 1):
+                    if abs(di) != r and abs(dj) != r:
+                        continue  # 只搜框的外圈
+                    ni, nj = my + di, mx + dj
+                    if 0 <= ni < self.map_height and 0 <= nj < self.map_width:
+                        if self.inflated_map[ni, nj] == 1:
+                            return r * self.map_resolution
+        return float('inf')
+
     def get_map_bounds(self) -> Tuple[np.ndarray, np.ndarray]:
         """取得地圖邊界"""
         if self.map_data is None:
@@ -561,40 +584,9 @@ class AITStarPlannerNode(Node):
             self._trigger_planning()
     
     def _scan_callback(self, msg: LaserScan):
-        """處理 LiDAR 掃描（用於動態障礙物偵測）"""
-        if self.current_pose is None:
-            return
-        
-        # 簡單的動態障礙物偵測
-        # 這裡可以加入更複雜的障礙物追蹤演算法
-        dynamic_obstacles = []
-        
-        robot_pos = np.array([
-            self.current_pose.pose.position.x,
-            self.current_pose.pose.position.y
-        ])
-        
-        # 從四元數計算航向角
-        q = self.current_pose.pose.orientation
-        yaw = np.arctan2(2.0 * (q.w * q.z + q.x * q.y),
-                         1.0 - 2.0 * (q.y * q.y + q.z * q.z))
-        
-        # 處理 LiDAR 點
-        angle = msg.angle_min
-        for i, r in enumerate(msg.ranges):
-            if msg.range_min < r < msg.range_max:
-                # 轉換到世界座標
-                point_angle = yaw + angle
-                point_x = robot_pos[0] + r * np.cos(point_angle)
-                point_y = robot_pos[1] + r * np.sin(point_angle)
-                
-                # 這裡可以加入聚類演算法來辨識動態障礙物
-                # 簡化起見，暫時不處理
-            
-            angle += msg.angle_increment
-        
-        # 更新動態障礙物
-        self.collision_checker.update_dynamic_obstacles(dynamic_obstacles)
+        """處理 LiDAR 掃描（用於動態障礙物偵測）- 目前未啟用"""
+        # 動態障礙物偵測尚未實作，跳過以節省 CPU
+        pass
     
     # =========================================================================
     # 服務回呼

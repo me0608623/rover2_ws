@@ -160,17 +160,22 @@ void GlobalCostmap::computeCostmap(nav_msgs::msg::OccupancyGrid &costmap,
     {
       for (uint32_t j = bw_min; j < bw_max; j++)
       {
-        // 只對自由空間進行成本計算
-        if (costmap.data[i*max_w+j] <= Cost::FREE_SPACE)
+        int idx = i*max_w+j;
+        // 跳過已標記為障礙物的格子 (保留原始障礙物值)
+        if (costmap.data[idx] > 80)
+          continue;
+
+        // 計算到障礙物的實際距離
+        double dy =  (cy-i)*map_res;
+        double dx =  (cx-j)*map_res;
+        double dis = std::sqrt(std::pow(dx, 2)+std::pow(dy, 2));
+
+        // 如果在膨脹半徑內，取較大的成本值
+        if (dis < inflation_radius_)
         {
-          // 計算到障礙物的實際距離
-          double dy =  (cy-i)*map_res;
-          double dx =  (cx-j)*map_res;
-          double dis = std::sqrt(std::pow(dx, 2)+std::pow(dy, 2));
-          
-          // 如果在膨脹半徑內，設定成本值
-          if (dis < inflation_radius_) 
-            costmap.data[i*max_w+j] = computeCost(dis);
+          int8_t cost = computeCost(dis);
+          if (cost > costmap.data[idx])
+            costmap.data[idx] = cost;
         }
       }
     }
@@ -180,14 +185,12 @@ void GlobalCostmap::computeCostmap(nav_msgs::msg::OccupancyGrid &costmap,
 /**
  * @brief 計算成本值
  * @param dis 到障礙物的距離
- * @return 成本值
- * @description 目前簡化為固定值，註解中保留了指數衰減的計算方式
+ * @return 成本值 (1~253)
+ * @description Nav2 標準指數衰減：越靠近障礙物 cost 越高，超出 inflation_radius 為 0
  */
 double GlobalCostmap::computeCost(const double dis)
 {
-  // 注意：原始指數衰減公式被註解，目前使用固定值
-  // 原始公式：return exp(-1.0 * cost_scaling_factor_ * (dis - inflation_radius_)) * (Cost::LETHAL - 1);
-  return 254;  // 固定返回最大成本值
+  return exp(-1.0 * cost_scaling_factor_ * dis) * (Cost::LETHAL - 1);
 }
 
 /**

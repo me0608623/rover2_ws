@@ -413,24 +413,37 @@ class AITStar:
         iteration = 0
         prev_cost = float('inf')
         
+        import time as _time
+        _t0 = _time.time()
+
         while iteration < self.max_iterations:
             iteration += 1
             self.stats['iterations'] = iteration
-            
+
             # 檢查是否需要新增新批次
             if self._should_add_batch():
                 self._add_batch()
-            
+
             # 處理頂點和邊佇列
             self._process_queues()
-            
+
+            # 每 50 次迭代輸出進度
+            if iteration % 50 == 0:
+                elapsed = _time.time() - _t0
+                print(f"[AIT*] iter={iteration}/{self.max_iterations} "
+                      f"vertices={len(self.vertices)} cost={self.solution_cost:.3f} "
+                      f"elapsed={elapsed:.1f}s")
+
             # 檢查收斂
             if self.solution_cost < float('inf'):
                 improvement = (prev_cost - self.solution_cost) / max(prev_cost, 1e-6)
                 if improvement < self.convergence_threshold and iteration > 10:
                     break
                 prev_cost = self.solution_cost
-        
+
+        elapsed = _time.time() - _t0
+        print(f"[AIT*] finished: iter={iteration} vertices={len(self.vertices)} "
+              f"cost={self.solution_cost:.3f} elapsed={elapsed:.1f}s")
         return self._extract_solution()
 
     def _calculate_edge_cost(self, s1: State, s2: State) -> float:
@@ -439,8 +452,13 @@ class AITStar:
         採用 Edge-based Adaptation 確保 h(v) 保持 Admissibility。
         """
         dist = s1.distance_to(s2)
+
+        # 當 w_obs == 0 時，跳過昂貴的障礙物距離查詢
+        if self.w_obs <= 0.0:
+            return dist
+
         d_obs = self.collision_checker.get_obstacle_distance(s2)
-        
+
         # 勢能場避障邏輯 (APF)
         if 0 < d_obs < self.obs_threshold:
             # 勢能場懲罰項: (1/d - 1/threshold)^2
@@ -449,7 +467,7 @@ class AITStar:
         elif d_obs <= 1e-6:
             # 碰撞區域或極近距離給予無限大代價
             return float('inf')
-        
+
         return dist
     
     def _initialize(self, start: np.ndarray, goal: np.ndarray):
@@ -579,34 +597,40 @@ class AITStar:
     def _update_edge_queue(self):
         """更新邊優先佇列"""
         self.edge_queue.clear()
-        
-        for vertex in self.vertices:
-            if vertex.cost_to_come >= float('inf'):
-                continue
-            
-            # 計算連接半徑
-            r = self._get_connection_radius()
-            
-            # 尋找鄰近頂點並新增潛在邊
+
+        # 連接半徑只需計算一次
+        r = self._get_connection_radius()
+        r_sq = r * r  # 用平方距離避免 sqrt
+
+        # 預先篩選有有限代價的頂點
+        reachable = [v for v in self.vertices if v.cost_to_come < float('inf')]
+
+        for vertex in reachable:
+            vpos = vertex.state.position
+
             for neighbor in self.vertices:
                 if neighbor == vertex:
                     continue
                 if neighbor in vertex.children:
                     continue
-                
-                dist = vertex.state.distance_to(neighbor.state)
-                if dist > r:
+
+                # 用平方距離做快速篩選
+                diff = neighbor.state.position - vpos
+                dist_sq = float(diff @ diff)
+                if dist_sq > r_sq:
                     continue
-                
+
+                dist = math.sqrt(dist_sq)
+
                 # 計算邊的代價
-                dist = self._calculate_edge_cost(vertex.state, neighbor.state)
-                edge_cost = vertex.cost_to_come + dist + neighbor.cost_to_go
-                
+                edge_cost_val = self._calculate_edge_cost(vertex.state, neighbor.state)
+                total_cost = vertex.cost_to_come + edge_cost_val + neighbor.cost_to_go
+
                 # 剪枝：如果邊代價已超過當前最佳解，跳過
-                if edge_cost >= self.solution_cost:
+                if total_cost >= self.solution_cost:
                     continue
-                
-                edge = Edge(vertex, neighbor, dist)
+
+                edge = Edge(vertex, neighbor, edge_cost_val)
                 heapq.heappush(self.edge_queue, edge)
     
     def _get_connection_radius(self) -> float:
