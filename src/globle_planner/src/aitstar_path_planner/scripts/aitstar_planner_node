@@ -359,7 +359,7 @@ class AITStarPlannerNode(Node):
         # 路徑發布
         self.path_pub = self.create_publisher(
             Path,
-            '/aitstar/path',
+            '/global_path',
             10
         )
 

@@ -141,12 +141,11 @@ MeanTracker::MeanTracker(MatrixXd _points, double _time, int _uid, TrackerParam 
     speed_2X1 = MatrixXd::Zero(2, 1);
 
     anchor_mean_2X1 = MatrixXd::Zero(2, 1);
-    anchor_mean_2X1 = mean_2X1;
-    
+
     h_fov_range = fov_range_compute(points, mean_3X1, 1, 0);
     v_fov_range = fov_range_compute(points, mean_3X1, 2, 0);
 
-    history_mean_2X1.push_back(mean_2X1);
+    history_mean_2X1.push_back(speed_2X1);
 
     kf = std::make_shared<KalmanFilter>(4,2);
 

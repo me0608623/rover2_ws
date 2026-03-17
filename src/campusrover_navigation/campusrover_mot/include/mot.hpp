@@ -414,9 +414,9 @@ void ExtendedObjectTracking<Tracker>::update(MatrixXd input_data, MatrixXd now_p
 
     end = clock();
     // std::cout << "now trackers num : " << trackers.size() << std::endl;
-    if(((double) (end - start)) / CLOCKS_PER_SEC > dt){
-        std::cout << "total compute time : " << ((double) (end - start)) / CLOCKS_PER_SEC << std::endl;
-    }
+    // if(((double) (end - start)) / CLOCKS_PER_SEC > dt){
+    //     std::cout << "total compute time : " << ((double) (end - start)) / CLOCKS_PER_SEC << std::endl;
+    // }
     // std::cout << ((double) (end - start)) / CLOCKS_PER_SEC << std::endl;
 }
 

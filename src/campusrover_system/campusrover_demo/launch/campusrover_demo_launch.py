@@ -119,7 +119,7 @@ def generate_launch_description():
         package='campusrover_demo',
         executable='simple_map_publisher',
         name='map_server',
-        output='screen',
+        output='log',
         parameters=[{
             'map_file': LaunchConfiguration('map_file')
         }]
@@ -174,7 +174,7 @@ def generate_launch_description():
                 package='campusrover_sim_rviz',
                 executable='obstacle_simulator',
                 name='obstacle_simulator_node',
-                output='screen',
+                output='log',
                 parameters=[{'odom_frame_id': 'odom'}, {'robot_frame_id': 'base_link'}]
             ),
             Node(
@@ -202,7 +202,7 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz_demo',
         arguments=['-d', '/home/aa/rviz/demo.rviz'],
-        output='screen',
+        output='log',
         condition=IfCondition(rviz)
     )
 
@@ -210,7 +210,7 @@ def generate_launch_description():
         package='campusrover_move',
         executable='dwa_planner',
         name='dwa_planner',
-        output='screen',
+        output='log',
         remappings=[
             ('elevator_path', elevator_path),
             ('global_path', global_path),
@@ -280,7 +280,8 @@ def generate_launch_description():
         package='ndt_localizer',
         executable='ndt_localizer_node',
         name='ndt_localizer_node',
-        output='screen',
+        output='log',
+        arguments=['--ros-args', '--log-level', 'ndt_localizer_node:=warn'],
         parameters=[{
             'resolution': ndt_resolution,
             'step_size': step_size,
@@ -325,7 +326,7 @@ def generate_launch_description():
         package='campusrover_routing',
         executable='mapinfo_db_handler.py',
         name='mapinfo_db_handler',
-        output='screen',
+        output='log',
         parameters=[
             {'use_database': False},
             {'json_folder': os.path.join(routing_pkg_share, 'share/json/')}
@@ -350,7 +351,7 @@ def generate_launch_description():
         package='campusrover_costmap_ros2',
         executable='local_costmap_node',
         name='campusrover_costmap',
-        output='screen',
+        output='log',
         parameters=[local_costmap_params],
         remappings=[
             ('points2', LaunchConfiguration('pointcloud_topic', default='velodyne_points'))
@@ -376,7 +377,7 @@ def generate_launch_description():
         package='campusrover_costmap_ros2',
         executable='global_costmap_node',
         name='global_costmap_node',
-        output='screen',
+        output='log',
         parameters=[{
             'costmap_resolution': 0.0,
             'inflation_radius': 0.5,
@@ -414,9 +415,9 @@ def generate_launch_description():
             'cov_scale': 20.0,
             'inherit_ratio': 0.6,
 
-            'history_length': 10,
-            'anchor_dist_threshold': 0.1,
-            'speed_threshold': 0.1,
+            'history_length': 20,
+            'anchor_dist_threshold': 0.3,
+            'speed_threshold': 0.3,
 
             'trackers_update_period': 0.05,
             'label_update_period': 0.1,
@@ -436,6 +437,18 @@ def generate_launch_description():
             'is_img_label': False,
             'only_dynamic_obstacle': False,
         }]
+    )
+
+    # 6c. MOT Marker 可視化節點 (TrackedObstacleArray → MarkerArray for RViz)
+    mot_marker_node = Node(
+        package='campusrover_mot',
+        executable='mot_marker_node.py',
+        name='mot_marker_node',
+        output='screen',
+        remappings=[
+            ('tracked_obstacles', '/tracked_label_obstacle'),
+            ('obstacles_marker', '/obstacles_marker_3d_marker'),
+        ]
     )
 
     # Costmap 的 Debug Group
@@ -520,6 +533,8 @@ def generate_launch_description():
         global_costmap_node,
         LogInfo(msg='[啟動] MOT 多物體追蹤節點...'),
         mot_node,
+        LogInfo(msg='[啟動] MOT Marker 可視化節點...'),
+        mot_marker_node,
 
         # 完成訊息
         LogInfo(msg='=' * 60),

@@ -66,6 +66,7 @@ install(
   script/show_now_pose.py
   script/sub_obs_to_csv.py
   script/target_pose_to_csv.py
+  script/mot_marker_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

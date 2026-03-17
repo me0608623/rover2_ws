@@ -158,12 +158,11 @@ MeanCovTracker::MeanCovTracker(MatrixXd _points, double _time, int _uid, Tracker
     speed_2X1 = MatrixXd::Zero(2, 1);
 
     anchor_mean_2X1 = MatrixXd::Zero(2, 1);
-    anchor_mean_2X1 = mean_2X1;
 
     h_fov_range = fov_range_compute(points, mean_3X1, 1, 0);
     v_fov_range = fov_range_compute(points, mean_3X1, 2, 0);
 
-    history_mean_2X1.push_back(mean_2X1);
+    history_mean_2X1.push_back(speed_2X1);
 
     kf = std::make_shared<KalmanFilter>(7,4); //7, 4 >> mean_x, mean_y, cov_eigen_value_product, cov_eigen_value_ratio, mean_x_, mean_y_, cov_eigen_value_product_,
 
