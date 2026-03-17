@@ -23,6 +23,7 @@ class MeanCovTracker{
         std::string name;
 
         bool is_kill;
+        int detection_count;
 
         ObjectStatus status;
         int status_int;
@@ -138,6 +139,7 @@ MeanCovTracker::MeanCovTracker(MatrixXd _points, double _time, int _uid, Tracker
     label = 0;
 
     is_kill = false;
+    detection_count = 1;
     status = ObjectStatus::STATIC;
     status_int = 0;
     
@@ -216,6 +218,7 @@ void MeanCovTracker::update(double dt, bool is_detected){
 
     kf->predict();
     if(is_detected){
+        detection_count++;
         mean_2X1 = points.leftCols(2).colwise().mean().transpose();
         mean_3X1 = points.colwise().mean().transpose();
         record_history(speed_2X1);

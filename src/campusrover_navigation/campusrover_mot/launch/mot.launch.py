@@ -26,17 +26,20 @@ def generate_launch_description():
             'detection_area_max_x': 10.0,
             'detection_area_min_y': -10.0,
             'detection_area_max_y': 10.0,
-            'detection_area_min_z': -0.05,
+            'detection_area_min_z': 0.05,
             'detection_area_max_z': 0.5,
             'track_dead_time': 1.0,
             'track_older_age': 0.5,
             'cluster_dist': 0.35,
-            'false_alarm_min': 10,
+            'false_alarm_min': 15,
             'false_alarm_max': 3000,
 
             'weight_min_tolerate': 0.01,
             'cov_scale': 20.0,
             'inherit_ratio': 0.6,
+
+            'min_publish_age': 0.3,
+            'min_detection_count': 3,
 
             'history_length': 10,
             'anchor_dist_threshold': 0.1,

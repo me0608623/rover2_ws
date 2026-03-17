@@ -78,6 +78,8 @@ private:
 
     // --- ROS param ---
     bool debug_mode, is_use_laser, is_map_filter, is_img_label, only_dynamic_obstacle;
+    double min_publish_age;
+    int min_detection_count;
     double h_scale, v_scale;
     double sync_tolerate, tf_tolerate;
     double laser_data_update_time = 0.0, env_data_update_time = 0.0;
@@ -90,6 +92,7 @@ private:
     rclcpp::Publisher<campusrover_msgs::msg::TrackedObstacleArray>::SharedPtr pub;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_1;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_2;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_tracked_cloud;
     rclcpp::Client<campusrover_msgs::srv::ImgLabel>::SharedPtr cli;
 
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub0;
@@ -161,6 +164,8 @@ void MotNode::get_param(){
     this->declare_parameter<bool>("is_map_filter", false);
     this->declare_parameter<bool>("is_img_label", false);
     this->declare_parameter<bool>("only_dynamic_obstacle", true);
+    this->declare_parameter<double>("min_publish_age", 0.3);
+    this->declare_parameter<int>("min_detection_count", 3);
 
     eot_param.detection_area[0] = this->get_parameter("detection_area_min_x").as_double();
     eot_param.detection_area[1] = this->get_parameter("detection_area_max_x").as_double();
@@ -199,6 +204,8 @@ void MotNode::get_param(){
     is_map_filter         = this->get_parameter("is_map_filter").as_bool();
     is_img_label          = this->get_parameter("is_img_label").as_bool();
     only_dynamic_obstacle = this->get_parameter("only_dynamic_obstacle").as_bool();
+    min_publish_age       = this->get_parameter("min_publish_age").as_double();
+    min_detection_count   = this->get_parameter("min_detection_count").as_int();
 
     eot_param.split_false_alarm[1] = eot_param.false_alarm[1];
 }
@@ -365,7 +372,13 @@ void MotNode::trackers_update_callback(){
         }
 
         campusrover_msgs::msg::TrackedObstacleArray toa;
+        double cur_time = this->now().seconds();
         for(size_t i = 0; i < eot->trackers.size(); i++){
+            // 過濾未確認的 tracker：必須存活足夠久且被偵測足夠多次
+            double age = cur_time - eot->trackers[i].born_time;
+            if(age < min_publish_age || eot->trackers[i].detection_count < min_detection_count){
+                continue;
+            }
 
             if(only_dynamic_obstacle){
                 if(eot->trackers[i].status == ObjectStatus::DYNAMIC){
@@ -406,6 +419,34 @@ void MotNode::trackers_update_callback(){
         }
 
         pub->publish(toa);
+
+        // Publish tracked obstacle points as blue colored point cloud
+        {
+            pcl::PointCloud<pcl::PointXYZRGB> colored_cloud;
+            eot_mutex.lock();
+            for(size_t i = 0; i < eot->trackers.size(); i++){
+                uint8_t r = 0, g = 0, b = 255;  // blue for static
+                if(eot->trackers[i].status == ObjectStatus::DYNAMIC){
+                    r = 255; g = 0; b = 0;  // red for dynamic
+                }
+                const auto &pts = eot->trackers[i].points;
+                for(int j = 0; j < pts.rows(); j++){
+                    pcl::PointXYZRGB p;
+                    p.x = pts(j, 0);
+                    p.y = pts(j, 1);
+                    p.z = pts(j, 2);
+                    p.r = r; p.g = g; p.b = b;
+                    colored_cloud.push_back(p);
+                }
+            }
+            eot_mutex.unlock();
+
+            sensor_msgs::msg::PointCloud2 cloud_msg;
+            pcl::toROSMsg(colored_cloud, cloud_msg);
+            cloud_msg.header.frame_id = map_frame;
+            cloud_msg.header.stamp = this->now();
+            pub_tracked_cloud->publish(cloud_msg);
+        }
     }
 }
 
@@ -546,6 +587,7 @@ MotNode::MotNode() : Node("mot_node"){
 
     // Publishers
     pub = this->create_publisher<campusrover_msgs::msg::TrackedObstacleArray>("tracked_label_obstacle", 10);
+    pub_tracked_cloud = this->create_publisher<sensor_msgs::msg::PointCloud2>("/tracked_obstacle_cloud", 10);
     if(debug_mode){
         pub_1 = this->create_publisher<sensor_msgs::msg::PointCloud2>("/points_filter", 10);
         pub_2 = this->create_publisher<sensor_msgs::msg::Image>("/labeled_img", 10);
