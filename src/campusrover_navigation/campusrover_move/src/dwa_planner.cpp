@@ -1192,7 +1192,7 @@ private:
         // }
         arriving_end_point_ = false;
         arriving_end_direction_ = false;
-        get_costmap_data_ = false;
+        // get_costmap_data_ = false;  // 不重置 costmap 狀態，避免服務呼叫後 DWA 卡住等待 costmap
 
         last_mode = path_sub_mode_;
         

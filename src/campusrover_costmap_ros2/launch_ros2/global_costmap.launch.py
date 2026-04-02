@@ -22,32 +22,40 @@ def generate_launch_description():
         ]),
         description='地圖文件路徑'
     )
-    
-    # Foxy 版本地圖服務器節點 (使用傳統 map_server)
+
+    use_sim_time_arg = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='使用模擬時間'
+    )
+
+    use_sim_time = LaunchConfiguration('use_sim_time')
+
+    # 地圖服務器節點
     map_server_node = Node(
-        package='nav2_map_server',  # Foxy 中也可用，但可能需要調整
+        package='nav2_map_server',
         executable='map_server',
         name='map_server',
         parameters=[{
             'yaml_filename': LaunchConfiguration('map_file'),
-            'use_sim_time': False
+            'use_sim_time': use_sim_time
         }],
         output='screen'
     )
-    
-    # 生命週期管理器 (Foxy 版本兼容)
+
+    # 生命週期管理器
     lifecycle_manager = Node(
         package='nav2_lifecycle_manager',
         executable='lifecycle_manager',
         name='lifecycle_manager_map_server',
         parameters=[{
             'node_names': ['map_server'],
-            'use_sim_time': False,
+            'use_sim_time': use_sim_time,
             'autostart': True
         }],
         output='screen'
     )
-    
+
     # 全域成本地圖節點
     global_costmap_node = Node(
         package='campusrover_costmap_ros2',
@@ -55,7 +63,8 @@ def generate_launch_description():
         name='global_costmap_node',
         output='screen',
         parameters=[{
-            'costmap_resolution': 0.0,  # 0=使用原始地圖解析度
+            'use_sim_time': use_sim_time,
+            'costmap_resolution': 0.0,
             'inflation_radius': 0.3,
             'cost_scaling_factor': 10.0
         }],
@@ -79,6 +88,7 @@ def generate_launch_description():
     
     return LaunchDescription([
         map_file_arg,
+        use_sim_time_arg,
         map_server_node,
         lifecycle_manager,
         global_costmap_node,

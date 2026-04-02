@@ -167,7 +167,7 @@ def generate_launch_description():
     # AIT* 可視化節點
     aitstar_visualizer_node = Node(
         package='aitstar_path_planner',
-        executable='aitstar_visualizer_node',
+        executable='aitstar_visualizer',
         name='aitstar_visualizer_node',
         namespace=namespace,
         output='screen',

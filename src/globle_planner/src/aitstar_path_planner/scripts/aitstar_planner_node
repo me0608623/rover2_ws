@@ -1,4 +1,4 @@
-#!/usr/bin/python3.10
+#!/usr/bin/env python3
 import sys
 import os
 
@@ -27,6 +27,7 @@ from geometry_msgs.msg import (
 from nav_msgs.msg import Path, OccupancyGrid, Odometry
 from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker, MarkerArray
+from campusrover_msgs.srv import PlannerFunction
 
 try:
     from nav2_msgs.action import ComputePathToPose, NavigateToPose
@@ -159,27 +160,40 @@ class OccupancyGridCollisionChecker:
         return True
 
     def is_edge_valid(self, state1: State, state2: State,
-                      resolution: float = 0.05) -> bool:
-        """檢查邊是否有效"""
+                      resolution: float = 0.1) -> bool:
+        """檢查邊是否有效（向量化碰撞檢測）"""
         if not self.is_state_valid(state1) or not self.is_state_valid(state2):
             return False
 
         direction = state2.position - state1.position
-        distance = np.linalg.norm(direction)
+        distance = float(np.linalg.norm(direction))
 
         if distance < 1e-6:
             return True
 
         n_steps = max(2, int(np.ceil(distance / resolution)))
 
-        for i in range(1, n_steps):
-            t = i / n_steps
-            intermediate_pos = state1.position + t * direction
-            intermediate_state = State(intermediate_pos)
-            if not self.is_state_valid(intermediate_state):
-                return False
+        if n_steps <= 15:
+            # 短邊：Python loop（early-exit 優勢）
+            for i in range(1, n_steps):
+                pos = state1.position + (i / n_steps) * direction
+                mx = int((pos[0] - self.map_origin[0]) / self.map_resolution)
+                my = int((pos[1] - self.map_origin[1]) / self.map_resolution)
+                if mx < 0 or mx >= self.map_width or my < 0 or my >= self.map_height:
+                    return False
+                if self.inflated_map[my, mx] == 1:
+                    return False
+            return True
 
-        return True
+        # 長邊：numpy 向量化批次查詢
+        t = np.linspace(0, 1, n_steps, endpoint=False)[1:]
+        pts = state1.position + t[:, np.newaxis] * direction
+        mxs = ((pts[:, 0] - self.map_origin[0]) / self.map_resolution).astype(np.int32)
+        mys = ((pts[:, 1] - self.map_origin[1]) / self.map_resolution).astype(np.int32)
+        in_bounds = (mxs >= 0) & (mxs < self.map_width) & (mys >= 0) & (mys < self.map_height)
+        if not np.all(in_bounds):
+            return False
+        return not np.any(self.inflated_map[mys, mxs] == 1)
 
     def get_obstacle_distance(self, state: State) -> float:
         """計算到最近障礙物邊緣的距離"""
@@ -305,6 +319,9 @@ class AITStarPlannerNode(Node):
 
         # 建立計時器
         self._create_timers()
+
+        # DWA 啟動服務客戶端
+        self.dwa_client = self.create_client(PlannerFunction, 'planner_function_dwa')
 
         self.get_logger().info('AIT* 規劃節點已初始化')
 
@@ -561,6 +578,7 @@ class AITStarPlannerNode(Node):
             if path is not None:
                 self.current_path = self._path_to_array(path)
                 self._publish_path(path)
+                self._activate_dwa(path)
                 return True
             else:
                 self.get_logger().warn('路徑規劃失敗')
@@ -617,19 +635,19 @@ class AITStarPlannerNode(Node):
             f'耗時={planning_time:.3f}s'
         )
 
-        # 路徑平滑
+        # 路徑平滑: shortcut 消除冗餘路點 + smooth 消除尖角
         if self.enable_smoothing and self.path_smoother is not None:
-            smoothed_points = self.path_smoother.shortcut(
-                path_points, max_iterations=50
+            path_points = self.path_smoother.shortcut(
+                path_points, max_iterations=100
             )
+            path_points = self.path_smoother.smooth(path_points)
             smoothed_cost = sum(
-                np.linalg.norm(smoothed_points[i+1] - smoothed_points[i])
-                for i in range(len(smoothed_points) - 1)
+                np.linalg.norm(path_points[i+1] - path_points[i])
+                for i in range(len(path_points) - 1)
             )
             self.get_logger().info(
-                f'平滑後: 代價={smoothed_cost:.3f}, 點數={len(smoothed_points)}'
+                f'平滑後: 代價={smoothed_cost:.3f}, 點數={len(path_points)}'
             )
-            path_points = smoothed_points
 
         # 插值以獲得更密集的路徑
         if self.path_smoother is not None:
@@ -692,6 +710,43 @@ class AITStarPlannerNode(Node):
     # =========================================================================
     # 發布函式
     # =========================================================================
+
+    def _activate_dwa(self, path: Path):
+        """路徑規劃成功後，顯示路徑資訊並自動啟動 DWA"""
+        import math
+
+        path_len = 0.0
+        for i in range(1, len(path.poses)):
+            dx = path.poses[i].pose.position.x - path.poses[i-1].pose.position.x
+            dy = path.poses[i].pose.position.y - path.poses[i-1].pose.position.y
+            path_len += math.hypot(dx, dy)
+
+        lin_vel = 0.5
+        ang_vel = 0.3
+        est_time = path_len / lin_vel if lin_vel > 0 else float('inf')
+
+        goal = path.poses[-1].pose.position
+        self.get_logger().info('=' * 50)
+        self.get_logger().info(f'路徑規劃完成! 路徑長度: {path_len:.2f} m, 共 {len(path.poses)} 個路點')
+        self.get_logger().info(f'目標: ({goal.x:.2f}, {goal.y:.2f})')
+        self.get_logger().info(f'預計速度: 線速 {lin_vel} m/s, 角速 {ang_vel} rad/s')
+        self.get_logger().info(f'預計到達時間: {est_time:.1f} 秒')
+
+        if not self.dwa_client.service_is_ready():
+            self.get_logger().warn('DWA 服務未就緒，路徑已發布但無法自動啟動 DWA')
+            self.get_logger().info('=' * 50)
+            return
+
+        req = PlannerFunction.Request()
+        req.action.data = True
+        req.direction_inverse.data = False
+        req.obstacle_avoidance.data = True
+        req.mode = PlannerFunction.Request.MODE_GLOBAL_PATH
+        req.speed_parameter.linear.x = lin_vel
+        req.speed_parameter.angular.z = ang_vel
+        self.dwa_client.call_async(req)
+        self.get_logger().info('DWA 已啟動，機器人開始移動!')
+        self.get_logger().info('=' * 50)
 
     def _publish_path(self, path: Path):
         """發布路徑"""

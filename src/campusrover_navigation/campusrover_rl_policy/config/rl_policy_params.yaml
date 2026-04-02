@@ -1,0 +1,11 @@
+rl_policy_node:
+  ros__parameters:
+    # Model
+    checkpoint_path: ""  # Empty = auto-detect
+    use_cadn: true
+    deterministic: true
+    device: "cuda:0"
+
+    # Navigation
+    goal_timeout: 45.0      # seconds per goal
+    goal_lookahead: 2.0     # meters along global path

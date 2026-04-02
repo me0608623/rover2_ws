@@ -20,8 +20,8 @@
 #include <vision_msgs/msg/detection2_d.hpp>
 #include <vision_msgs/msg/detection2_d_array.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include <image_geometry/pinhole_camera_model.h>
-#include <cv_bridge/cv_bridge.h>
+#include <image_geometry/pinhole_camera_model.hpp>
+#include <cv_bridge/cv_bridge.hpp>
 #include <campusrover_msgs/srv/img_label.hpp>
 #include <campusrover_msgs/msg/tracked_obstacle.hpp>
 #include <campusrover_msgs/msg/tracked_obstacle_array.hpp>
@@ -265,6 +265,16 @@ void MotNode::laser_sub_callback(const sensor_msgs::msg::LaserScan::SharedPtr ms
 }
 
 void MotNode::pcl_sub_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg){
+    // Drop stale messages from previous sim sessions (timestamp too far in the past)
+    double now_sec = this->now().seconds();
+    double msg_sec = rclcpp::Time(msg->header.stamp).seconds();
+    if(now_sec > 1.0 && (now_sec - msg_sec) > 10.0){
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+            "mot_node: Dropping stale pointcloud (msg=%.1fs, now=%.1fs, diff=%.1fs)",
+            msg_sec, now_sec, now_sec - msg_sec);
+        return;
+    }
+
     bool is_get_tf = true;
     geometry_msgs::msg::TransformStamped tf_stamped;
     geometry_msgs::msg::TransformStamped tf_stamped_laser;

@@ -16,6 +16,7 @@ ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS
   scripts/aitstar_planner_node
   scripts/aitstar_visualizer
+  scripts/dwa_keyboard_trigger
   DESTINATION lib/${PROJECT_NAME}
 )
 

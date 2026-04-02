@@ -388,6 +388,11 @@ class AITStar:
             'collision_checks': 0,
             'solutions_found': 0
         }
+
+        # KD-tree 用於加速鄰居查詢
+        self._kd_tree = None
+        self._vertex_list: List[Vertex] = []
+        self._vertex_positions: np.ndarray = np.empty((0, self.dimension))
     
     def plan(self, 
              start: np.ndarray, 
@@ -412,6 +417,7 @@ class AITStar:
         
         iteration = 0
         prev_cost = float('inf')
+        no_improve_count = 0
         
         import time as _time
         _t0 = _time.time()
@@ -434,10 +440,18 @@ class AITStar:
                       f"vertices={len(self.vertices)} cost={self.solution_cost:.3f} "
                       f"elapsed={elapsed:.1f}s")
 
-            # 檢查收斂
+            # 檢查收斂：需要連續多個批次無明顯改進才停止
             if self.solution_cost < float('inf'):
-                improvement = (prev_cost - self.solution_cost) / max(prev_cost, 1e-6)
-                if improvement < self.convergence_threshold and iteration > 10:
+                if prev_cost >= float('inf'):
+                    improvement = 1.0  # 首次找到解，視為重大改進
+                else:
+                    improvement = (prev_cost - self.solution_cost) / prev_cost
+                if improvement < self.convergence_threshold:
+                    no_improve_count += 1
+                else:
+                    no_improve_count = 0
+                # 至少運行 3 個批次，且連續 3 次無改進才退出
+                if no_improve_count >= 3 and iteration > self.batch_size * 3:
                     break
                 prev_cost = self.solution_cost
 
@@ -497,10 +511,28 @@ class AITStar:
         
         self.vertices.add(self.start_vertex)
         self.vertices.add(self.goal_vertex)
-        
+
         # 初始化頂點佇列
         heapq.heappush(self.vertex_queue, self.start_vertex)
+
+        # 初始化 KD-tree
+        self._rebuild_kdtree()
     
+    def _rebuild_kdtree(self):
+        """重建 KD-tree 以加速鄰居查詢"""
+        try:
+            from scipy.spatial import cKDTree as _cKDTree
+            self._vertex_list = list(self.vertices)
+            if len(self._vertex_list) >= 2:
+                self._vertex_positions = np.array(
+                    [v.state.position for v in self._vertex_list]
+                )
+                self._kd_tree = _cKDTree(self._vertex_positions)
+            else:
+                self._kd_tree = None
+        except ImportError:
+            self._kd_tree = None
+
     def _set_initial_solution(self, path: List[np.ndarray]):
         """設定初始解（熱啟動）"""
         if len(path) < 2:
@@ -582,71 +614,119 @@ class AITStar:
         # 將新頂點加入佇列
         for vertex in new_vertices:
             heapq.heappush(self.vertex_queue, vertex)
-        
+
+        # 重建 KD-tree 以反映新頂點
+        self._rebuild_kdtree()
+
         # 為現有頂點更新潛在邊
         self._update_edge_queue()
     
-    def _find_similar_vertex(self, state: State, 
+    def _find_similar_vertex(self, state: State,
                              threshold: float = 1e-3) -> Optional[Vertex]:
         """尋找與給定狀態相近的現有頂點"""
+        if self._kd_tree is not None:
+            idx = self._kd_tree.query_ball_point(state.position, r=threshold)
+            if idx:
+                return self._vertex_list[idx[0]]
+            return None
+        # Fallback：線性掃描
         for vertex in self.vertices:
             if vertex.state.distance_to(state) < threshold:
                 return vertex
         return None
     
     def _update_edge_queue(self):
-        """更新邊優先佇列"""
+        """更新邊優先佇列（使用 KD-tree 批次查詢取代 O(N²) 雙重迴圈）"""
         self.edge_queue.clear()
 
-        # 連接半徑只需計算一次
+        if self._kd_tree is None or len(self._vertex_list) < 2:
+            # Fallback：原始雙重迴圈
+            r = self._get_connection_radius()
+            r_sq = r * r
+            reachable = [v for v in self.vertices if v.cost_to_come < float('inf')]
+            for vertex in reachable:
+                vpos = vertex.state.position
+                for neighbor in self.vertices:
+                    if neighbor == vertex:
+                        continue
+                    if neighbor in vertex.children:
+                        continue
+                    diff = neighbor.state.position - vpos
+                    dist_sq = float(diff @ diff)
+                    if dist_sq > r_sq:
+                        continue
+                    dist = math.sqrt(dist_sq)
+                    total_cost = vertex.cost_to_come + dist + neighbor.cost_to_go
+                    if total_cost >= self.solution_cost:
+                        continue
+                    heapq.heappush(self.edge_queue, Edge(vertex, neighbor, dist))
+            return
+
         r = self._get_connection_radius()
-        r_sq = r * r  # 用平方距離避免 sqrt
+        reachable_idx = [i for i, v in enumerate(self._vertex_list)
+                         if v.cost_to_come < float('inf')]
+        if not reachable_idx:
+            return
 
-        # 預先篩選有有限代價的頂點
-        reachable = [v for v in self.vertices if v.cost_to_come < float('inf')]
+        reachable_positions = self._vertex_positions[reachable_idx]
+        nbrs_list = self._kd_tree.query_ball_point(reachable_positions, r=r)
 
-        for vertex in reachable:
-            vpos = vertex.state.position
+        for k, src_idx in enumerate(reachable_idx):
+            src = self._vertex_list[src_idx]
+            src_pos = self._vertex_positions[src_idx]
+            child_states = {c.state for c in src.children}
 
-            for neighbor in self.vertices:
-                if neighbor == vertex:
+            nbr_arr = np.array([i for i in nbrs_list[k] if i != src_idx])
+            if len(nbr_arr) == 0:
+                continue
+
+            nbr_positions = self._vertex_positions[nbr_arr]
+            diffs = nbr_positions - src_pos
+            dists = np.sqrt((diffs ** 2).sum(axis=1))
+            nbr_ctg = np.array([self._vertex_list[i].cost_to_go for i in nbr_arr])
+            totals = src.cost_to_come + dists + nbr_ctg
+            mask = totals < self.solution_cost
+
+            for nbr_i, dist in zip(nbr_arr[mask], dists[mask]):
+                nbr = self._vertex_list[nbr_i]
+                if nbr.state in child_states:
                     continue
-                if neighbor in vertex.children:
-                    continue
-
-                # 用平方距離做快速篩選
-                diff = neighbor.state.position - vpos
-                dist_sq = float(diff @ diff)
-                if dist_sq > r_sq:
-                    continue
-
-                dist = math.sqrt(dist_sq)
-
-                # 計算邊的代價
-                edge_cost_val = self._calculate_edge_cost(vertex.state, neighbor.state)
-                total_cost = vertex.cost_to_come + edge_cost_val + neighbor.cost_to_go
-
-                # 剪枝：如果邊代價已超過當前最佳解，跳過
-                if total_cost >= self.solution_cost:
-                    continue
-
-                edge = Edge(vertex, neighbor, edge_cost_val)
-                heapq.heappush(self.edge_queue, edge)
+                heapq.heappush(self.edge_queue, Edge(src, nbr, float(dist)))
     
+    def _get_informed_measure(self) -> float:
+        """計算知情集 (prolate hyperspheroid) 的測度"""
+        if self.solution_cost >= float('inf'):
+            # 無解時使用整個搜尋空間的體積
+            return float(np.prod(self.bounds_max - self.bounds_min))
+
+        c_best = self.solution_cost
+        c_min = self.start_vertex.state.distance_to(self.goal_vertex.state)
+        if c_best <= c_min + 1e-6:
+            return float(np.prod(self.bounds_max - self.bounds_min))
+
+        d = self.dimension
+        zeta_d = (math.pi ** (d / 2.0)) / math.gamma(d / 2.0 + 1)
+        r1 = c_best / 2.0
+        ri = math.sqrt(c_best**2 - c_min**2) / 2.0
+        # 椭球体积 = zeta_d * r1 * ri^(d-1)
+        return zeta_d * r1 * (ri ** (d - 1))
+
     def _get_connection_radius(self) -> float:
-        """計算 RRT* 風格的連接半徑"""
+        """計算 RRG 連接半徑 (OMPL 公式)
+        r = rewireFactor * [2*(1+1/d) * (mu/zeta_d) * (log(q)/q)]^(1/d)
+        """
         n = len(self.vertices)
         if n < 2:
             return float('inf')
-        
-        # 計算最優半徑
-        # r = gamma * (log(n) / n)^(1/d)
-        gamma = self.rewire_factor * 2 * (1 + 1/self.dimension) ** (1/self.dimension)
-        volume = np.prod(self.bounds_max - self.bounds_min)
-        unit_ball_volume = (math.pi ** (self.dimension / 2)) / math.gamma(self.dimension / 2 + 1)
-        
-        r = gamma * ((volume / unit_ball_volume) * (math.log(n) / n)) ** (1 / self.dimension)
-        
+
+        d = self.dimension
+        zeta_d = (math.pi ** (d / 2.0)) / math.gamma(d / 2.0 + 1)
+        mu = self._get_informed_measure()
+
+        r = self.rewire_factor * (
+            2.0 * (1.0 + 1.0 / d) * (mu / zeta_d) * (math.log(n) / n)
+        ) ** (1.0 / d)
+
         return min(r, np.linalg.norm(self.bounds_max - self.bounds_min))
     
     def _process_queues(self):
@@ -679,31 +759,32 @@ class AITStar:
         """擴展頂點佇列中的最佳頂點"""
         if not self.vertex_queue:
             return
-        
+
         vertex = heapq.heappop(self.vertex_queue)
-        
-        # 如果頂點代價已超過當前最佳解，跳過
-        if vertex.get_key() >= self.solution_cost:
+
+        # 跳過不可達的頂點（cost_to_come 仍為 inf）
+        if vertex.cost_to_come >= float('inf'):
+            return
+
+        # 如果頂點代價已超過當前最佳解，跳過（僅在有解時剪枝）
+        if self.solution_cost < float('inf') and vertex.get_key() >= self.solution_cost:
             return
         
-        # 尋找可連接的鄰居
+        # 尋找可連接的鄰居（使用 KD-tree 取代線性掃描）
         r = self._get_connection_radius()
-        
-        for neighbor in self.vertices:
-            if neighbor == vertex:
-                continue
-            
+
+        if self._kd_tree is not None:
+            indices = self._kd_tree.query_ball_point(vertex.state.position, r=r)
+            neighbors = [self._vertex_list[i] for i in indices
+                         if self._vertex_list[i] != vertex]
+        else:
+            neighbors = [v for v in self.vertices if v != vertex
+                         and vertex.state.distance_to(v.state) <= r]
+
+        for neighbor in neighbors:
             dist = vertex.state.distance_to(neighbor.state)
-            if dist > r:
-                continue
-            
-            # 建立邊並加入佇列
-            real_dist = self._calculate_edge_cost(vertex.state, neighbor.state)
-            potential_cost = vertex.cost_to_come + real_dist + neighbor.cost_to_go
-            
-            if potential_cost < self.solution_cost:
-                edge = Edge(vertex, neighbor, real_dist)
-                heapq.heappush(self.edge_queue, edge)
+            if vertex.cost_to_come + dist + neighbor.cost_to_go < self.solution_cost:
+                heapq.heappush(self.edge_queue, Edge(vertex, neighbor, dist))
     
     def _process_edge(self):
         """處理邊佇列中的最佳邊"""
@@ -732,17 +813,20 @@ class AITStar:
         # 更新連接
         if target.parent is not None:
             target.parent.children.discard(target)
-        
+
         target.parent = source
         target.cost_to_come = new_cost
         source.children.add(target)
-        
+
         # 如果連接到目標，更新最佳解
         if target == self.goal_vertex:
             if new_cost < self.solution_cost:
                 self.solution_cost = new_cost
                 self.stats['solutions_found'] += 1
-        
+
+        # 將更新後的頂點重新加入頂點佇列以便擴展出新邊
+        heapq.heappush(self.vertex_queue, target)
+
         # 傳播代價更新到子節點
         self._propagate_cost_update(target)
     
@@ -842,7 +926,45 @@ class PathSmoother:
                 smoothed = smoothed[:i+1] + smoothed[j:]
         
         return smoothed
-    
+
+    def smooth(self, path: List[np.ndarray],
+               weight_smooth: float = 0.3,
+               weight_data: float = 0.5,
+               max_iterations: int = 200,
+               tolerance: float = 1e-4) -> List[np.ndarray]:
+        """
+        梯度下降路徑平滑：最小化路徑曲率同時保持接近原始路徑
+        """
+        if len(path) < 3:
+            return path
+
+        smoothed = np.array([p.copy() for p in path], dtype=float)
+        original = smoothed.copy()
+
+        for _ in range(max_iterations):
+            max_change = 0.0
+            for i in range(1, len(smoothed) - 1):
+                for d in range(smoothed.shape[1]):
+                    old = smoothed[i][d]
+                    smoothed[i][d] += (
+                        weight_data * (original[i][d] - smoothed[i][d]) +
+                        weight_smooth * (smoothed[i-1][d] + smoothed[i+1][d] - 2.0 * smoothed[i][d])
+                    )
+                    max_change = max(max_change, abs(smoothed[i][d] - old))
+            if max_change < tolerance:
+                break
+
+        # 驗證平滑後路徑無碰撞
+        result = [smoothed[0].copy()]
+        for i in range(1, len(smoothed)):
+            s1 = State(result[-1])
+            s2 = State(smoothed[i])
+            if self.collision_checker.is_edge_valid(s1, s2):
+                result.append(smoothed[i].copy())
+            else:
+                result.append(path[i].copy())
+        return result
+
     def interpolate(self, path: List[np.ndarray], 
                     resolution: float = 0.1) -> List[np.ndarray]:
         """

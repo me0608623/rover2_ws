@@ -204,8 +204,8 @@ void CampusroverCostmap::toCostmap(PointCloudPtr &cloud_in, nav_msgs::msg::Occup
   double origin_y = occupancy_grid.info.origin.position.y;
   
   // 將點雲座標轉換為網格索引
-  std::vector<Eigen::Vector2i> obstacle_index; 
-  BOOST_FOREACH (const pcl::PointXYZ& pt, cloud_in->points)
+  std::vector<Eigen::Vector2i> obstacle_index;
+  for (const auto& pt : cloud_in->points)
   {
     // 將世界座標轉換為網格索引 (col, row)
     int x = (pt.x - origin_x)/resolution;
